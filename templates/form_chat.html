@@ -22,7 +22,8 @@
   // Подключаем блок для вывода текста
 let text = document.getElementById("message")
 // Подключаемся к серверу
-let socket = io('http://localhost:3001');
+//let socket = io('http://localhost:3000');
+let socket = io();
 // Отслеживаем подключение
 socket.on('connect', function () {
     // Выводим сообщение подключение

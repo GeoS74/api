@@ -53,29 +53,11 @@ router.get('/test', async ctx => {
 });
 
 
-/*
-const Koa = require("koa");
-const { createServer } = require("http");
-const { Server } = require("socket.io");
 
-const app = new Koa();
-const httpServer = createServer(app.callback());
-const io = new Server(httpServer, {  options  });
-*/
 
-// const { createServer } = require("http");
-// const { Server } = require("socket.io");
-
-// const httpServer = createServer(app.callback());
-// const io = new Server(app, {
-//         cors: {
-//           origin: "http://localhost:3000",
-//           methods: ["GET", "POST"]
-//         }
-//       });
 
 // // Создание сервера
-const httpServer = require('http').createServer();
+const httpServer = require('http').createServer(app.callback());
 // Берём API socket.io
 const io = require('socket.io')(httpServer, {
     cors: {
@@ -102,7 +84,7 @@ io.on('message', message => {
 });
  
 // Назначаем порт для сервера
-httpServer.listen(3001);
+//httpServer.listen(3001);
 
 router.get('/chat', async (ctx, next) => {
     ctx.set('content-type', 'text/html');
@@ -128,4 +110,4 @@ app.use(ctx => {
     ctx.body = fs.createReadStream(path.join(__dirname, '/client/registrateForm.html'));
 });
 
-module.exports = app;
+module.exports = httpServer;
