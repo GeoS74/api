@@ -67,21 +67,22 @@ const io = require('socket.io')(httpServer, {
   });
  
 // Подключаем клиенты
-io.on('connection', () => {
+io.on('connection', (socket) => {
     // Выводим в консоль 'connection'
-    console.log('connection')
+    console.log('connection');
     // Отправляем всем кто подключился сообщение привет
-    io.emit('hello', 'Привет')
+    io.emit('hello', 'Привет');
     // Что делать при случае дисконнекта
-    io.on('disconnect', () => {
+    socket.on('disconnect', () => {
         // Выводи 'disconnected'
         console.log('disconnected');
     });
+    socket.on('message', message => {
+        console.log('message', message);
+        io.emit('hello', message);
+    });
 });
 
-io.on('message', message => {
-    console.log('message', message);
-});
  
 // Назначаем порт для сервера
 //httpServer.listen(3001);

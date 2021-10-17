@@ -38,8 +38,8 @@ document.forms.publish.onsubmit = function() {
   let outgoingMessage = this.message.value;
 
   console.log(outgoingMessage);
-  //socket.send(outgoingMessage);
-  socket.emit('client_message', outgoingMessage);
+  socket.send(outgoingMessage);
+  //socket.emit('client_message', outgoingMessage);
   return false;
 };
 </script>
