@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Чат</title>
+    <style>
+        .container { margin: 15px; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.2.0/socket.io.min.js"></script>
+</head>
+<body class="container">
+    <h3>Чат</h3>
+    <form action="/chat" method="post" name="publish">
+        <input class="container" type="text" placeholder="message" name="message">
+        <br>
+        <input class="container" type="submit" value="send">
+    </form>
+    <div id="message" class="container"></div>
+
+
+<script>
+  // Подключаем блок для вывода текста
+let text = document.getElementById("message")
+// Подключаемся к серверу
+let socket = io('http://localhost:3001');
+// Отслеживаем подключение
+socket.on('connect', function () {
+    // Выводим сообщение подключение
+    text.innerHTML = "Подключение прошло успешно<br>"
+});
+// Отслеживание сообщения от сервера со заголовком 'hello'
+socket.on('hello', function (data) { // Выводим сообщение от сервера
+        text.innerHTML += "Сервер: " + data + "<br>"
+});
+
+document.forms.publish.onsubmit = function() {
+  let outgoingMessage = this.message.value;
+
+  console.log(outgoingMessage);
+  //socket.send(outgoingMessage);
+  socket.emit('client_message', outgoingMessage);
+  return false;
+};
+</script>
+</body>
+</html>
