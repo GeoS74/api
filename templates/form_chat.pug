@@ -10,7 +10,11 @@ html
 
     body.container
         h3 Чат
-        form(action="/register" method="post")
+        form(action="/chat" method="post" name="publish")
             input(type="text", placeholder="message", name="message", class="container")
             br
             input(type="submit", value="send", class="container")
+        div#message(class="container")
+        
+        script
+            include client_chat.js

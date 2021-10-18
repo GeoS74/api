@@ -57,31 +57,32 @@ router.get('/test', async ctx => {
 
 
 // // Создание сервера
-const httpServer = require('http').createServer(app.callback());
+//const httpServer = require('http').createServer(app.callback());
 // Берём API socket.io
-const io = require('socket.io')(httpServer, {
-    cors: {
-      origin: "http://localhost:3000",
-      methods: ["GET", "POST"]
-    }
-  });
+// const io = require('socket.io')(httpServer, {
+//     cors: {
+//       origin: "http://localhost:3000",
+//       methods: ["GET", "POST"]
+//     }
+//   });
+// const io = require('./socket');
  
-// Подключаем клиенты
-io.on('connection', (socket) => {
-    // Выводим в консоль 'connection'
-    console.log('connection');
-    // Отправляем всем кто подключился сообщение привет
-    io.emit('hello', 'Привет');
-    // Что делать при случае дисконнекта
-    socket.on('disconnect', () => {
-        // Выводи 'disconnected'
-        console.log('disconnected');
-    });
-    socket.on('message', message => {
-        console.log('message', message);
-        io.emit('hello', message);
-    });
-});
+// // Подключаем клиенты
+// io.on('connection', (socket) => {
+//     // Выводим в консоль 'connection'
+//     console.log('connection');
+//     // Отправляем всем кто подключился сообщение привет
+//     io.emit('hello', 'Привет');
+//     // Что делать при случае дисконнекта
+//     socket.on('disconnect', () => {
+//         // Выводи 'disconnected'
+//         console.log('disconnected');
+//     });
+//     socket.on('message', message => {
+//         console.log('message', message);
+//         io.emit('hello', message);
+//     });
+// });
 
  
 // Назначаем порт для сервера
@@ -90,6 +91,10 @@ io.on('connection', (socket) => {
 router.get('/chat', async (ctx, next) => {
     ctx.set('content-type', 'text/html');
     ctx.body = await fs.createReadStream(path.join(__dirname, './templates/form_chat.html'));
+
+    // ctx.body = pug.renderFile(
+    //     path.join(__dirname, './templates/form_chat') + '.pug'
+    // );
 });
 router.post('/chat', async (ctx, next) => {
     
@@ -111,4 +116,4 @@ app.use(ctx => {
     ctx.body = fs.createReadStream(path.join(__dirname, '/client/registrateForm.html'));
 });
 
-module.exports = httpServer;
+module.exports = app;
