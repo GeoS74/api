@@ -4,4 +4,7 @@ module.exports = {
     mongodb: {
         uri: process.env.MONGO_DB || 'mongodb://localhost:27017/magnus',
     },
+    app: {
+        uploadFilesDir: './files',
+    },
 };

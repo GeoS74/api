@@ -2,11 +2,17 @@ const Koa = require('koa');
 const Router = require('koa-router');
 const fs = require('fs');
 const path = require('path');
+const pug = require('pug');
 const {allUsers, userById, createUser, updateUser} = require('./controllers/user');
+const {uploadLetters, addLetter, addTheme, allLetter, allLetters} = require('./controllers/letters');
+const koaBody = require('./libs/koaBody');
+const { ConnectionClosedEvent } = require('mongodb');
 
 const app = new Koa();
 
-app.use(require('koa-body')());
+app.use(require('koa-static')('client/public'));
+
+
 
 app.use(async (ctx, next) => {
     try{
@@ -35,22 +41,152 @@ app.use(async (ctx, next) => {
     }
 });
 
+
+
+// app.use(require('koa-body')({
+//     formidable:{uploadDir: './files'},    //This is where the files would come
+//     multipart: true,
+//     onFileBegin: (formName, file) => {
+//         //file.newFilename = 'test.jpg';
+//         console.log('onFileBegin');
+//         console.log(file);
+//     },
+// }));
+
+// app.use((ctx, next) => {
+//     console.log(ctx.request.body);
+//     console.log(ctx.request.files);
+//     if(ctx.request.files){
+//        fs.rename(ctx.request.files.any_file_1.path, './files/'+ctx.request.files.any_file_1.name, err => {
+//         if(err) throw err;
+//         console.log('rename complete');
+//         });
+//     }
+    
+//     next();
+// });
+
+
+
+// app.use((ctx, next) => {
+//     if(ctx.request.url !== '/') return next();
+//     ctx.set('content-type', 'text/html');
+//     ctx.body = fs.createReadStream('./files/form.htm');
+// });
+
+
+
+
+
 const router = new Router();
 
-
-const {v4: uuidv4} = require('uuid');
-const pug = require('pug');
-router.get('/test', async ctx => {
-    //console.log(require('uuid').v5());
-    //ctx.body = uuidv4();
-    // const err = new Error({'goo':'bingo'});
-    // err.name = 'ValidationError';
-    // ctx.throw(408, err);
-
-    ctx.body = pug.renderFile(
-        path.join(__dirname, './templates/form') + '.pug'
-    );
+router.get('/letters', async ctx => {
+    ctx.set('content-type', 'text/html');
+    ctx.body = fs.createReadStream(path.join(__dirname, 'client/letters.html'));
 });
+
+router.post('/letters', koaBody, addTheme);
+router.post('/letter', koaBody, addLetter);
+router.get('/letterz', allLetters);
+router.get('/letter', allLetter);
+
+
+
+//router.post('/letters', koaBody, uploadLetters, saveLetter);
+
+// const config = require('./config');
+// const formidable = require('formidable');
+// const form = formidable({
+//     uploadDir: config.app.uploadFilesDir,
+//     allowEmptyFiles: false, //разрешить загрузку пустых файлов - не работает или я не понимаю как это должно работать
+//     //minFileSize: 1,
+//     multiples: true,
+//     hashAlgorithm: 'md5',
+//     keepExtensions: true
+// });
+
+// router.post('/letters', async ctx => {
+//     form.parse(ctx.req, (err, fields, files) => {
+//         console.log(err);
+//         console.log(fields);
+//     });
+
+//     ctx.body = 'ok';
+// });
+
+
+
+
+router.get('/test', async ctx => {
+    console.log('start');
+    //Promise.resolve('promise').then(foo => console.log(foo));
+    new Promise(resolve => {
+        console.log('promise');
+        resolve('then-1');
+    })
+    .then(v => {
+        console.log(v);
+    });
+
+    console.log('end');
+});
+
+
+
+
+// app.use(require('koa-body')({
+//     formidable:{uploadDir: './files'},    //This is where the files would come
+//     multipart: true,
+//     onFileBegin: (formName, file) => {
+//         //file.newFilename = 'test.jpg';
+//         console.log('onFileBegin');
+//         console.log(file);
+//     },
+// }));
+
+
+
+// const router = new Router();
+
+
+
+// router.get('/letters', async ctx => {
+//     ctx.set('content-type', 'text/html');
+//     ctx.body = await fs.createReadStream(path.join(__dirname, './client/letters.html'));
+// });
+// // router.post('/letters', uploadLetters);
+// router.post('/letters', require('koa-body')({
+//         formidable:{uploadDir: './files'},    //This is where the files would come
+//         multipart: true,
+//         onFileBegin: (formName, file) => {
+//             //file.newFilename = 'test.jpg';
+//             console.log('onFileBegin');
+//             console.log(file);
+//         },
+//     }), async ctx => {
+//     ctx.body = ctx.request.files;
+// });
+
+
+
+
+
+
+
+
+// const {v4: uuidv4} = require('uuid');
+
+// router.get('/test', async ctx => {
+//     //console.log(require('uuid').v5());
+//     //ctx.body = uuidv4();
+//     // const err = new Error({'goo':'bingo'});
+//     // err.name = 'ValidationError';
+//     // ctx.throw(408, err);
+
+//     ctx.body = pug.renderFile(
+//         path.join(__dirname, './templates/form') + '.pug'
+//     );
+// });
 
 
 
@@ -88,32 +224,27 @@ router.get('/test', async ctx => {
 // Назначаем порт для сервера
 //httpServer.listen(3001);
 
-router.get('/chat', async (ctx, next) => {
-    ctx.set('content-type', 'text/html');
-    ctx.body = await fs.createReadStream(path.join(__dirname, './templates/form_chat.html'));
+// router.get('/chat', async (ctx, next) => {
+//     ctx.set('content-type', 'text/html');
+//     ctx.body = await fs.createReadStream(path.join(__dirname, './templates/form_chat.html'));
 
-    // ctx.body = pug.renderFile(
-    //     path.join(__dirname, './templates/form_chat') + '.pug'
-    // );
-});
-router.post('/chat', async (ctx, next) => {
-    
-    ctx.body = 'ok';
-});
-
+//     // ctx.body = pug.renderFile(
+//     //     path.join(__dirname, './templates/form_chat') + '.pug'
+//     // );
+// });
 
 
 
 router.get('/user', allUsers);
 router.get('/user/:id', userById);
-router.post('/user', createUser);
-router.post('/user/:id', updateUser);
+router.post('/user', koaBody, createUser);
+router.post('/user/:id', koaBody, updateUser);
 
 app.use(router.routes());
 
-app.use(ctx => {
-    ctx.set('content-type', 'text/html');
-    ctx.body = fs.createReadStream(path.join(__dirname, '/client/registrateForm.html'));
-});
+// app.use(ctx => {
+//     ctx.set('content-type', 'text/html');
+//     ctx.body = fs.createReadStream(path.join(__dirname, '/client/registrateForm.html'));
+// });
 
 module.exports = app;
