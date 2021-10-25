@@ -43,6 +43,30 @@ app.use(async (ctx, next) => {
 
 
 
+const router = new Router();
+
+
+
+router.post('/thema', koaBody, addTheme);
+router.put('/thema/:id', koaBody, allLetter);
+router.del('/thema/:id', addLetter);
+
+router.get('/letters', async ctx => {
+    ctx.set('content-type', 'text/html');
+    ctx.body = fs.createReadStream(path.join(__dirname, 'client/letters.html'));
+});
+router.post('/letter', allLetters);
+router.del('/letter/:id', allLetter);
+router.del('/letter/:id', allLetter);
+
+
+
+router.post('/test', koaBody, async ctx => {
+    ctx.body = ctx.request.body;
+});
+
+
+
 // app.use(require('koa-body')({
 //     formidable:{uploadDir: './files'},    //This is where the files would come
 //     multipart: true,
@@ -78,17 +102,7 @@ app.use(async (ctx, next) => {
 
 
 
-const router = new Router();
 
-router.get('/letters', async ctx => {
-    ctx.set('content-type', 'text/html');
-    ctx.body = fs.createReadStream(path.join(__dirname, 'client/letters.html'));
-});
-
-router.post('/letters', koaBody, addTheme);
-router.post('/letter', koaBody, addLetter);
-router.get('/letterz', allLetters);
-router.get('/letter', allLetter);
 
 
 
@@ -116,20 +130,6 @@ router.get('/letter', allLetter);
 
 
 
-
-router.get('/test', async ctx => {
-    console.log('start');
-    //Promise.resolve('promise').then(foo => console.log(foo));
-    new Promise(resolve => {
-        console.log('promise');
-        resolve('then-1');
-    })
-    .then(v => {
-        console.log(v);
-    });
-
-    console.log('end');
-});
 
 
 

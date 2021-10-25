@@ -24,7 +24,8 @@ async function addLetter(ctx, next){
 module.exports.addLetter = addLetter;
 
 async function allLetter(ctx, next){
-    ctx.body = await Letter.find().populate('thema');
+    // ctx.body = await Letter.find().populate('thema');
+    ctx.body = ctx.params;
 }
 module.exports.allLetter = allLetter;
 

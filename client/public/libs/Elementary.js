@@ -1,10 +1,10 @@
 /*
 конструктор:
-new Elem('p')
-new Elem('<p>text</p>')
-new Elem('<ul><li>1</li><li>1</li></ul>')
-new Elem('#identificator')
-new Elem('.class')
+new El('p')
+new El('<p>text</p>')
+new El('<ul><li>1</li><li>1</li></ul>')
+new El('#identificator')
+new El('.class')
 */
 "use strict"
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -14,11 +14,8 @@ function Detector()
 {
 	this.observers = []; //abstruct properties
 	this.value = null;   //abstruct properties
-	
 
 	this.then = [];
-	
-	
 
 	Object.defineProperties(
 		this,
@@ -134,6 +131,7 @@ function Backend() //extends Detector
 	Detector.call(this);
 	this.backend = {
 		path: '',
+		method: '',
 		data: {}
 	};
 
@@ -150,6 +148,11 @@ Backend.prototype.setPath = function(path)
 	return this;
 };
 
+Backend.prototype.setMethod = function(method)
+{
+	this.backend.method = method;
+	return this;
+};
 
 Backend.prototype.setData = function(data)
 {

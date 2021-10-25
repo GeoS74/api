@@ -7,15 +7,38 @@
   
     <link href="/css/bootstrap.min.css" rel="stylesheet" type="text/css"/><!--https://bootswatch.com/cosmo/-->
     <script type="text/javascript" src="/libs/Elementary.js"></script>
-    <script type="text/javascript" src="/libs/GsHttpRequest.js"></script>
+    <script>
+        //@Override
+        Backend.prototype.query = async function()
+        {
+           let response = await fetch(this.backend.path, {
+                method: this.backend.method,
+                headers: {},
+                body: this.backend.data
+            });
+            console.log('answer:');
+            console.log(await response.json());
+            return this;
+        };
+    </script>
     <style>
-        .main{margin: 10px}
+        .main{margin: 20px; width:800px;}
+        h1{margin: 35px 0}
+        #addForm{margin: 35px 0}
+        #addForm input[type=text]{float:left;width:85%}
+        #addForm button{float:right; width:15%}
+        .card{border-collapse: collapse;}
+
+        #addThemaForm{width: 550px}
+        #addThemaForm div{margin: 0 0 35px 0;}
+        #addThemaForm button{margin: 0 15px 0 0;}
+        .modal_block{position:fixed; background:white; z-index:100501; padding:35px 45px; border-radius: 0px;}
     </style>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container-fluid">
-          <a class="navbar-brand" href="#">Navbar</a>
+          <a class="navbar-brand" href="#">MAGNUS</a>
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarColor01" aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
           </button>
@@ -47,10 +70,22 @@
                 </div>
               </li>
             </ul>
-            <form class="d-flex">
+            <!-- <form class="d-flex">
               <input class="form-control me-sm-2" type="text" placeholder="Search">
               <button class="btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
-            </form>
+            </form> -->
+            <div class="d-flex">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                      <a class="nav-link" href="#">Войти
+               
+                      </a>
+                    </li>
+                    <li class="nav-item">
+                      <a class="nav-link" href="#">Регистрация</a>
+                    </li>
+                  </ul>
+            </div>
           </div>
         </div>
       </nav>
@@ -58,58 +93,219 @@
     <h1>Реестр писем</h1>
     <button type="button" class="btn btn-outline-primary" id="addTheme">Новая переписка</button>
 
-    <script>
-        addTheme.addEventListener('click', function(){
-            this.remove();
+    <form id="addForm">
+        <fieldset>
+          <div class="form-group row">
+            <div class="form-group">
+                <input type="text" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="Ввведите номер письма">
+                <button type="submit" class="btn btn-primary">Поиск</button>
+            </div>
+          </div>
+          </fieldset>
+      </form>
+
+
+
+
+      <script>
+          addTheme.onclick = _ => {
+            edit_files_form
+                .setVal({'event':'reset'})
+                .render();
+
+                background_layer.render();
+          };
+      </script>
+
+      <script>//фон для модального окна
+        let background_layer = new El('<div style="position: fixed; top: 0px; width: 100%; height: 100%; background: rgb(117, 117, 117); z-index: 100500; opacity: 0.5;">')
+            .on('click', function(){
+                edit_files_form.setVal({'event':'reset'});
+            });
+        </script>
+
+
+
+
+
+
+
+  <script>//форма редактирования файлов
+    let edit_files_form = new El('<form id="addThemaForm" class="modal_block">')
+        .render('afterbegin', '<legend>Новая переписка</legend>')
+        .render('beforeend', '<div class="form-group"><label for="exampleInputEmail1" class="form-label mt-4">Тема переписки</label>')
+        .on('submit', function(){event.preventDefault()})
+        .setHandler(function(){
+            if(this.getVal().event === 'reset')
+            {
+                this.elem.reset();
+                this.elem.remove();
+                background_layer.elem.remove();
+                return;
+            }
+
+            console.log('answer:');
+            console.log(this.getVal());
+        });
+    
+    //позиционирование формы
+    edit_files_form.elem.style.left = document.documentElement.clientWidth/4 + 'px';
+    edit_files_form.elem.style.top = document.documentElement.clientHeight/4 + 'px';
+    
+     //text
+     new El('<input type="text" name="thema" class="form-control" placeholder="Введите тему">')
+        .setParentNode(edit_files_form.elem.querySelector('.form-group'))
+        .render()
+        .render('afterend', '<small id="emailHelp" class="form-text text-muted">Тема переписки будет общей для всех писем</small>');
+
+    //submit
+    new El('<button type="submit" class="btn btn-primary">Создать</button>')
+        .setParentNode(edit_files_form.elem)
+        .render()
+        .on('click', async function(){
+    
+            edit_files_form
+              .setData(new FormData(edit_files_form.elem))
+              .setPath('/test')
+              .setMethod('POST')
+              .query();
+
+
+            // let response = await fetch('/test', {
+            //     method: 'POST',
+            //     headers: {},
+            //     body: new FormData(edit_files_form.elem)
+            // });
+            // console.log('response');
+            // console.log(await response.json());
+
+
+
+            // fd.append('id', edit_files_form.getVal().value.id);
+
+            // frontend_data.form_edit = fd;
+
+            // frontend_data.tmpl_data.event = 'edit_files';
+
+            // edit_files_form.query();
+
+            // edit_files_form.setVal({'event':'reset'});
+        });
+    
+    
+    new El('<button type="button" class="btn btn-outline-primary">Отмена</button>')
+        .setParentNode(edit_files_form.elem)
+        .render()
+        .on('click', function(){
+            edit_files_form.setVal({'event':'reset'});
         });
     </script>
 
 
 
 
- <form style="width:550px"> 
-        <fieldset>
-          <div class="form-group">
-            <label for="exampleInputEmail1" class="form-label mt-4">Тема</label>
-            <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="new theme">
-            <small id="emailHelp" class="form-text text-muted">Заполните тему переписки</small>
-          </div>
-          <button type="submit" class="btn btn-outline-primary">Добавить</button>
-        </fieldset>
-      </form>
 
 
 
 
-    <blockquote class="blockquote"></blockquote>
-        <h5>Письмо в Транснефть</h5>
-        <p class="mb-1">исх.: <a href="#">№550/к от 21.10.2021</a></p>
-        <p class="mb-1" style="margin-left:25px">вх.: <a href="#">№ТСИБ-05-07/2021 от 22.10.2021</a></p>
-    </blockquote>
 
-    <blockquote class="blockquote"></blockquote>
-        <h5>Верификация карданного вала 375-2201010</h5>
-        <p class="mb-1">исх.: <a href="#">№550/к от 21.10.2021</a></p>
-        <p class="mb-1" style="margin-left:25px">вх.: <a href="#">№ТСИБ-05-07/2021 от 22.10.2021</a></p>
-        <p class="mb-1">исх.: <a href="#">№550/к от 21.10.2021</a></p>
-        <p class="mb-1" style="margin-left:25px">вх.: <a href="#">№ТСИБ-05-07/2021 от 22.10.2021</a></p>
-        <p class="mb-1" style="margin-left:25px">вх.: <a href="#">№ТСИБ-05-07/2021 от 22.10.2021</a></p>
-    </blockquote> 
 
-    <blockquote class="blockquote"></blockquote>
-        <h5>Письмо в Транснефть</h5>
-        <p class="mb-1">исх.: <a href="#">№550/к от 21.10.2021</a></p>
-        <p class="mb-1" style="margin-left:25px">вх.: <a href="#">№ТСИБ-05-07/2021 от 22.10.2021</a></p>
-    </blockquote>
 
-    <blockquote class="blockquote"></blockquote>
-        <h5>Верификация карданного вала 375-2201010</h5>
-        <p class="mb-1">исх.: <a href="#">№550/к от 21.10.2021</a></p>
-        <p class="mb-1" style="margin-left:25px">вх.: <a href="#">№ТСИБ-05-07/2021 от 22.10.2021</a></p>
-        <p class="mb-1">исх.: <a href="#">№550/к от 21.10.2021</a></p>
-        <p class="mb-1" style="margin-left:25px">вх.: <a href="#">№ТСИБ-05-07/2021 от 22.10.2021</a></p>
-        <p class="mb-1" style="margin-left:25px">вх.: <a href="#">№ТСИБ-05-07/2021 от 22.10.2021</a></p>
-    </blockquote> 
+
+
+
+
+
+
+
+      <div class="card">
+        <div class="card-body">
+          <h4 class="card-title">Верификация карданного вала</h4>
+          <small class="text-muted">3 days ago</small>
+          <h6 class="card-subtitle mb-2 text-muted">Запрос на завод, Андрею не понравилось наличие краски</h6>
+          <p class="card-text">исх. № <a href="">515/к от 21.10.2021</a></p>
+          <a href="#" class="card-link">Card link</a>
+          <a href="#" class="card-link">Another link</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h4 class="card-title">Запрос оригинальности подшипника 2007124А</h4>
+          <p class="card-text">исх. № <a href="">404/к от 21.10.2021</a></p>
+          <p class="card-text" style="margin-left: 25px;">вх. № <a href="">ТСИБ-099-К-13245 от 15.09.2021</a></p>
+          <a href="#" class="card-link">Card link</a>
+          <a href="#" class="card-link">Another link</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h4 class="card-title">Уведомление о закрытии предписаний</h4>
+          <p class="card-text">исх. № <a href="">100/к от 10.09.2021</a></p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h4 class="card-title">Верификация карданного вала</h4>
+          <p class="card-text">исх. № <a href="">515/к от 21.10.2021</a></p>
+          <p class="card-text">исх. № <a href="">100/к от 10.09.2021</a></p>
+          <p class="card-text" style="margin-left: 25px;">вх. № <a href="">ТСИБ-099-К-13245 от 15.09.2021</a></p>
+        </div>
+      </div>
+
+
+      <div class="card">
+        <div class="card-body">
+          <h4 class="card-title">Верификация карданного вала</h4>
+          <h6 class="card-subtitle mb-2 text-muted">Запрос на завод</h6>
+          <p class="card-text">исх. № <a href="">515/к от 21.10.2021</a></p>
+          <a href="#" class="card-link">Card link</a>
+          <a href="#" class="card-link">Another link</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h4 class="card-title">Запрос оригинальности подшипника</h4>
+          <p class="card-text">исх. № <a href="">404/к от 21.10.2021</a></p>
+          <p class="card-text" style="margin-left: 25px;">вх. № <a href="">ТСИБ-099-К-13245 от 15.09.2021</a></p>
+          <a href="#" class="card-link">Card link</a>
+          <a href="#" class="card-link">Another link</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h4 class="card-title">Уведомление о закрытии предписаний</h4>
+          <p class="card-text">исх. № <a href="">100/к от 10.09.2021</a></p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h4 class="card-title">Верификация карданного вала</h4>
+          <p class="card-text">исх. № <a href="">515/к от 21.10.2021</a></p>
+          <p class="card-text">исх. № <a href="">100/к от 10.09.2021</a></p>
+          <p class="card-text" style="margin-left: 25px;">вх. № <a href="">ТСИБ-099-К-13245 от 15.09.2021</a></p>
+        </div>
+      </div>
+
+      <script>
+          let foo = document.querySelectorAll('.card-text');
+
+          for(let e of foo) {
+              e.addEventListener('mouseenter', function(){
+                this.insertAdjacentHTML('beforeend', '<small class="text-muted" style="margin-left:15px; cursor:pointer">добавить ответ</small>');
+              });
+
+              e.addEventListener('mouseleave', function(){
+                    this.querySelector('small').remove();
+                });
+          }
+      </script>
+
 </div>
 </body>
 </html>
