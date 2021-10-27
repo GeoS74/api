@@ -62,13 +62,13 @@ module.exports.addLetter = async function (ctx, next){
         console.log(ctx.request.body);
     console.log(ctx.request.files);
     if(ctx.request.files){
-       fs.rename(ctx.request.files.any_file_1.path, './files/'+ctx.request.files.any_file_1.name, err => {
+       fs.rename(ctx.request.files.scanCopyLetter.path, './files/'+ctx.request.files.scanCopyLetter.name, err => {
         if(err) throw err;
         console.log('rename complete');
         });
     }
     ctx.status = 505;
-    ctx.body = 'ok';
+    ctx.body ={ok:'ok'};
 }
 
 

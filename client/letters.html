@@ -146,9 +146,7 @@
     <script>//фон для модального окна
         let background_layer = new El('<div style="position: fixed; top: 0px; width: 100%; height: 100%; background: rgb(117, 117, 117); z-index: 100500; opacity: 0.5;">')
             .on('click', function(){
-                themaForm.elem.reset();
-                themaForm.elem.remove();
-                this.remove();
+              hideAddThemaForm();
             });
     </script>
 
@@ -214,7 +212,8 @@
 
 <script>//форма добаления письма
   const letterForm = new El('<form id="addLetterForm" class="modal_block">')
-      .render('afterbegin', '<legend>Новое письмо</legend>')
+      .render('afterbegin', '<input type="hidden" name="id_thema"/>')
+      .render('afterbegin', '<legend>Скан-копия письма</legend>')
       .render('beforeend', '<div class="form-group"><label for="exampleInputEmail1" class="form-label mt-4">Скан-копия письма</label>')
       .on('submit', function(){event.preventDefault()})
       .setHandler(async function(){
@@ -239,15 +238,19 @@
   letterForm.elem.style.top = document.documentElement.clientHeight/4 + 'px';
   
    //text
-   new El('<input type="text" name="thema" class="form-control" placeholder="Введите тему">')
+   new El('<input type="text" name="number" class="form-control" placeholder="Номер письма">')
       .setParentNode(letterForm.elem.querySelector('.form-group'))
-      .render()
-      .render('afterend', '<small class="form-text text-muted">Тема переписки будет общей для всех писем</small>');
+      .render();
 
-   new El('<input type="text" name="description" style="margin-top:30px" class="form-control" placeholder="Добавьте свой комментарий">')
+   new El('<input type="text" name="description" style="margin-top:30px" class="form-control" placeholder="Дата письма">')
       .setParentNode(letterForm.elem.querySelector('.form-group'))
       .render()
-      .render('afterend', '<small class="form-text text-muted">Небольшое описание может быть полезным</small>');
+      .render('afterend', '<small class="form-text text-muted">формат даты: ДД.ММ.ГГГГ</small>');
+    
+    //file
+   new El('<input type="file" name="scanCopyLetter" class="form-control">')
+      .setParentNode(letterForm.elem.querySelector('.form-group'))
+      .render();
 
   //submit
   new El('<button type="submit" class="btn btn-primary">Создать</button>')
@@ -292,14 +295,24 @@ function createHtml(data){ //генерирует html для переписки
     return `
         <div class="card" id="${data.id}">
         <div class="card-body">
-          <h4 class="card-title" onmouseenter=viewAddSpan(event) onmouseleave=hideAddSpan(event)>${data.thema}</h4>
+          <h4 class="card-title" onclick=showAddLetterForm(event) onmouseenter=showAddSpan(event) onmouseleave=hideAddSpan(event)>${data.thema}</h4>
           <h6 class="card-subtitle mb-2 text-muted">${data.description || ''}</h6>
         </div>
       </div>
     `;
 }
 
-function viewAddSpan(event){ //показать кнопку добавления письма
+function showAddLetterForm(event){
+  let idThema = event.target.parentElement.parentElement.parentElement.id;
+  letterForm.elem.querySelector('input[type=hidden]').value = idThema;
+
+  letterForm.render();
+  background_layer.render();
+
+  console.log('id: ', idThema);
+}
+
+function showAddSpan(event){ //показать кнопку добавления письма
     event.target.insertAdjacentHTML('beforeend', '<small class="text-muted tooltip_small">добавить ответ</small>');
 }
 function hideAddSpan(event){ //скрыть кнопку добавления письма

@@ -8,12 +8,12 @@ const schema = new mongoose.Schema({
         ref: LetterThema,
         required: 'поле ${PATH} обязательно для заполнения',
     },
+    number: {
+        type: String
+    },
     date: {
         type: Date,
         default: Date.now()
-    },
-    number: {
-        type: String
     },
     scanCopyFile: {
         type: String,
