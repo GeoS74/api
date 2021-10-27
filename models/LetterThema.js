@@ -6,6 +6,9 @@ const schema = new mongoose.Schema({
         type: String,
         required: 'заполните поле Тема письма',
     },
+    description:{
+        type: String
+    },
     user: {
         type: mongoose.ObjectId,
     }
@@ -19,11 +22,27 @@ const schema = new mongoose.Schema({
     }
 });
 
+
+
+
+
 // const Letter = require('./LetterThema');
 schema.virtual('foo', {
     ref: 'Letter',
     localField: '_id',
     foreignField: 'thema'
 });
+
+
+
+schema.index(
+    {
+        thema: 'text',
+        foo: 'text'
+    }, 
+    {
+      name: 'TextSearchIndex',
+      default_language: 'russian'
+  });
 
 module.exports = connection.model('LetterTheme', schema);

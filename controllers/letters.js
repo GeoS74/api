@@ -3,25 +3,81 @@ const path = require('path');
 const Letter = require('../models/Letter');
 const LetterThema = require('../models/LetterThema');
 
-async function addTheme(ctx, next){
+//if(!mongoose.Types.ObjectId.isValid(subcategory)){
+
+module.exports.addThema = async function(ctx, next){
+    if(!ctx.request.body.thema) return ctx.throw(400, 'Тема должна быть заполнена');
     const thema = await LetterThema.create({
         thema: ctx.request.body.thema,
+        description: ctx.request.body.description || undefined
+        // user: ...
     });
 
-    ctx.body = thema;
-}
-module.exports.addTheme = addTheme;
+    ctx.body = {
+        id: thema._id,
+        thema: thema.thema,
+        description: thema.description,
+        createdAt: thema.createdAt, 
+    };
+};
 
-async function addLetter(ctx, next){
-    const letter = await Letter.create({
-        title: ctx.request.body.title,
-        thema: ctx.request.body.thema,
-        parent: ctx.request.body.parent,
-    });
 
-    ctx.body = letter;
+//добавить populate
+module.exports.allThemas = async function(ctx, next){
+    if(!ctx.params) return next();
+
+    //ctx.body = await LetterThema.find().populate('foo');
+   const themas = await LetterThema.find().sort({_id: -1});
+
+   ctx.body = themas.map(thema => ({
+        id: thema._id,
+        thema: thema.thema,
+        description: thema.description,
+        createdAt: thema.createdAt,
+   }));
+};
+
+
+//добавить populate
+module.exports.searchThemas = async function(ctx, next){
+    //ctx.body = await LetterThema.find().populate('foo');
+   const themas = await LetterThema.find({
+        $text: { 
+            $search: ctx.params.search_text,
+            $language: 'russian'
+        }})
+        .sort({_id: -1});
+
+   ctx.body = themas.map(thema => ({
+        id: thema._id,
+        thema: thema.thema,
+        description: thema.description,
+        createdAt: thema.createdAt,
+   }));
+};
+
+
+
+module.exports.addLetter = async function (ctx, next){
+        console.log(ctx.request.body);
+    console.log(ctx.request.files);
+    if(ctx.request.files){
+       fs.rename(ctx.request.files.any_file_1.path, './files/'+ctx.request.files.any_file_1.name, err => {
+        if(err) throw err;
+        console.log('rename complete');
+        });
+    }
+    ctx.status = 505;
+    ctx.body = 'ok';
 }
-module.exports.addLetter = addLetter;
+
+
+
+
+
+
+
+
 
 async function allLetter(ctx, next){
     // ctx.body = await Letter.find().populate('thema');
@@ -29,10 +85,7 @@ async function allLetter(ctx, next){
 }
 module.exports.allLetter = allLetter;
 
-async function allLetters(ctx, next){
-    ctx.body = await LetterThema.find().populate('foo');
-}
-module.exports.allLetters = allLetters;
+
 
 
 

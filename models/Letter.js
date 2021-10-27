@@ -3,19 +3,22 @@ const mongoose = require('mongoose');
 const LetterThema = require('./LetterThema');
 
 const schema = new mongoose.Schema({
-    title: {
-        type: String,
-        required: 'поле ${PATH} обязательно для заполнения',
-    },
     thema: {
         type: mongoose.Schema.Types.ObjectId,
         ref: LetterThema,
-        //required: true,
-    }
-    // date: {
-    //     type: Date,
-    //     default: Date.now()
-    // },
+        required: 'поле ${PATH} обязательно для заполнения',
+    },
+    date: {
+        type: Date,
+        default: Date.now()
+    },
+    number: {
+        type: String
+    },
+    scanCopyFile: {
+        type: String,
+        required: 'поле ${PATH} обязательно для заполнения',
+    },
 }, {
     timestamps: true,
 });

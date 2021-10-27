@@ -4,9 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const pug = require('pug');
 const {allUsers, userById, createUser, updateUser} = require('./controllers/user');
-const {uploadLetters, addLetter, addTheme, allLetter, allLetters} = require('./controllers/letters');
+const {allThemas, addThema, searchThemas, addLetter} = require('./controllers/letters');
 const koaBody = require('./libs/koaBody');
-const { ConnectionClosedEvent } = require('mongodb');
 
 const app = new Koa();
 
@@ -18,25 +17,28 @@ app.use(async (ctx, next) => {
     try{
         await next();
     }
-    catch(err){
-        if(err.status){
-            ctx.status = err.status;
-            ctx.body = {error: err.message};
+    catch(error){
+        if(error.status){
+            ctx.status = error.status;
+            ctx.body = {error: error.message};
         } else {
-            if(err.code === 11000){
-                ctx.status = 400;
-                ctx.body = {error: `field '${Object.keys(err.keyPattern).join('')}' - not unique`};
-            } 
-            else if(err.name){
-                console.log(err);
-                ctx.status = 401;
-                ctx.body = {error: err.message};
-            }
-            else {
-                console.log(err);
-                ctx.status = 500;
-                ctx.body = {error: '~Internal server error~'};
-            }
+            console.log(error);
+            ctx.status = 500;
+            ctx.body = {error: '~Internal server error~'};
+            // if(err.code === 11000){
+            //     ctx.status = 400;
+            //     ctx.body = {error: `field '${Object.keys(err.keyPattern).join('')}' - not unique`};
+            // } 
+            // else if(err.name){
+            //     console.log(err);
+            //     ctx.status = 401;
+            //     ctx.body = {error: err.message};
+            // }
+            // else {
+            //     console.log(err);
+            //     ctx.status = 500;
+            //     ctx.body = {error: '~Internal server error~'};
+            // }
         }
     }
 });
@@ -47,22 +49,38 @@ const router = new Router();
 
 
 
-router.post('/thema', koaBody, addTheme);
-router.put('/thema/:id', koaBody, allLetter);
-router.del('/thema/:id', addLetter);
+router.get('/themas', allThemas);
+router.get('/themas/:search_text', searchThemas);
+
+
+router.post('/thema', koaBody, addThema);
+// router.put('/thema/:id', koaBody, allLetter);
+// router.del('/thema/:id', addLetter);
 
 router.get('/letters', async ctx => {
     ctx.set('content-type', 'text/html');
     ctx.body = fs.createReadStream(path.join(__dirname, 'client/letters.html'));
 });
-router.post('/letter', allLetters);
-router.del('/letter/:id', allLetter);
-router.del('/letter/:id', allLetter);
+router.post('/letter', koaBody, addLetter);
+// router.del('/letter/:id', allLetter);
 
 
 
-router.post('/test', koaBody, async ctx => {
+
+router.post('/test', require('koa-body'), async ctx => {
     ctx.body = ctx.request.body;
+});
+
+
+router.get('/echo', async ctx => {
+    ctx.set('content-type', 'text/html');
+    ctx.body = fs.createReadStream(path.join(__dirname, 'client/example.html'));
+});
+router.post('/echo', koaBody, ctx => {
+    ctx.body = {
+        message: ctx.request.body.message,
+        date: Date.now(),
+    };
 });
 
 

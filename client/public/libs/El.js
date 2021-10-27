@@ -1,11 +1,3 @@
-/*
-конструктор:
-new El('p')
-new El('<p>text</p>')
-new El('<ul><li>1</li><li>1</li></ul>')
-new El('#identificator')
-new El('.class')
-*/
 "use strict"
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////pattern Observer////////////////////pattern Observer////////////////////pattern Observer////////////////////pattern Observer////////////////
@@ -160,21 +152,24 @@ Backend.prototype.setData = function(data)
 	return this;
 };
 
-Backend.prototype.query = function()
-{
-	GsHttpRequest.query(
-		this.backend.path,
-		this.backend.data,
-		function(result, errors)
-		{
-			if(errors)
-			{ 
-				console.log(errors);	
-			}
-			this.setVal(result);
-		}.bind(this), //здесь контекст теряется (this == window), поэтому используется привязка
-		true
-    );
+Backend.prototype.query = function(method, path, data)
+{          
+	let foo = async function(){
+		path = path || this.backend.path;
+		method = method || this.backend.method;
+		data = data || this.backend.data;
+		let response = await fetch(path, {
+			method: method,
+			headers: {},
+			body: method !== 'GET' ? data : null,
+		});
+
+		try{
+			this.setVal(await response.json());
+        }catch(error){
+			console.log(error);
+		}
+	}.call(this);
 	return this;
 };
 
@@ -197,11 +192,6 @@ Object.defineProperties(
 
 
 
-
-
-
-
-//смешанный функционал субъекта и наблюдателя
 function Unit(model) //extends Backend, Observer
 {
 	Backend.call(this);
@@ -216,7 +206,7 @@ Unit.prototype = Object.create(Backend.prototype);
 
 Unit.prototype.constructor = Unit;
 
-Unit.prototype.update = function(){}; //это не будет вызвано
+Unit.prototype.update = function(){}; //don`t call this
 
 Unit.prototype.handler = function(){return this.update;}; //Override this function
 
@@ -353,9 +343,9 @@ El.prototype.off = function(event){};
 El.prototype.wrap = function(html)
 {
 	let div = document.createElement('div');
-	div.insertAdjacentHTML('afterbegin', html); //вставить обертку во временный div
-	this.elem.after(div.firstElementChild); //спозиционировать обёртку
-	this.elem.nextElementSibling.append(this.elem); //переместить элемент
+	div.insertAdjacentHTML('afterbegin', html); //insert wrap to temp div
+	this.elem.after(div.firstElementChild); //new position wrap
+	this.elem.nextElementSibling.append(this.elem); //elem move
 	return this;
 };
 
