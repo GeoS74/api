@@ -55,7 +55,16 @@ router.get('/themas/:search_text', searchThemas);
 
 router.post('/thema', koaBody, addThema);
 // router.put('/thema/:id', koaBody, allLetter);
-// router.del('/thema/:id', addLetter);
+
+
+const connection = require('./libs/connection');
+router.del('/themas', ctx => {
+    connection.db.dropCollection('letters', function(err, result) {});
+    connection.db.dropCollection('letterthemes', function(err, result) {});
+    ctx.body = 'ok';
+});
+
+
 
 router.get('/letters', async ctx => {
     ctx.set('content-type', 'text/html');
@@ -63,6 +72,10 @@ router.get('/letters', async ctx => {
 });
 router.post('/letter', koaBody, addLetter);
 // router.del('/letter/:id', allLetter);
+
+
+
+
 
 
 

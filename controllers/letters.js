@@ -22,53 +22,105 @@ module.exports.addThema = async function(ctx, next){
 };
 
 
-//добавить populate
 module.exports.allThemas = async function(ctx, next){
-    if(!ctx.params) return next();
+   const themas = await LetterThema.find().sort({_id: -1}).populate('foo');
 
-    //ctx.body = await LetterThema.find().populate('foo');
-   const themas = await LetterThema.find().sort({_id: -1});
-
+//    ctx.body = themas;
    ctx.body = themas.map(thema => ({
         id: thema._id,
         thema: thema.thema,
         description: thema.description,
         createdAt: thema.createdAt,
+        letters: thema.foo.map(letter => ({
+            id: letter._id,
+            scanCopyFile: letter.scanCopyFile,
+            number: letter.number,
+            date: letter.date
+        })),
    }));
 };
 
 
-//добавить populate
 module.exports.searchThemas = async function(ctx, next){
-    //ctx.body = await LetterThema.find().populate('foo');
+
    const themas = await LetterThema.find({
         $text: { 
             $search: ctx.params.search_text,
             $language: 'russian'
         }})
-        .sort({_id: -1});
+        .sort({_id: -1})
+        .populate('foo');
 
-   ctx.body = themas.map(thema => ({
-        id: thema._id,
-        thema: thema.thema,
-        description: thema.description,
-        createdAt: thema.createdAt,
-   }));
+
+   let letters = await Letter.find({
+        $text: { 
+            $search: ctx.params.search_text,
+            $language: 'russian'
+        }})
+        .sort({_id: -1})
+        .populate('thema');
+
+    console.log(themas);
+    console.log('~ ~ ~ ~ ~ ~ ~ ~ ~ ~');
+
+    let result = letters.map(letter => {
+        return letter;
+    });
+
+    console.log(result);
+    console.log('----------------------');
+
+
+
+    ctx.body = themas;
+
+
+// { results: { $elemMatch: { product: "xyz" } } }
+
+    // const themas = await LetterThema.find(
+    //     {}
+    // )
+    // .populate('foo');
+
+//    ctx.body = themas.map(thema => ({
+//         id: thema._id,
+//         thema: thema.thema,
+//         description: thema.description,
+//         createdAt: thema.createdAt,
+//    }));
 };
 
 
 
 module.exports.addLetter = async function (ctx, next){
-        console.log(ctx.request.body);
-    console.log(ctx.request.files);
-    if(ctx.request.files){
-       fs.rename(ctx.request.files.scanCopyLetter.path, './files/'+ctx.request.files.scanCopyLetter.name, err => {
-        if(err) throw err;
-        console.log('rename complete');
-        });
-    }
-    ctx.status = 505;
-    ctx.body ={ok:'ok'};
+    // console.log(ctx.request.body);
+    // console.log(ctx.request.files);
+
+    //uncomment this
+    //
+    // if(!ctx.request.files){
+    //     return ctx.throw('400', 'file not uploaded');
+    // }
+    // let newFileName = Date.now() + '.' + ctx.request.files.scanCopyLetter.name.split('.').pop();
+    // fs.rename(ctx.request.files.scanCopyLetter.path, './files/'+newFileName, err => {
+    //     if(err) throw err;
+    // });
+
+    const letter = await Letter.create({
+        thema: ctx.request.body.id_thema,
+        number: ctx.request.body.number,
+        date: ctx.request.body.date,
+        //uncomment this
+        //scanCopyFile: newFileName
+    });
+
+    ctx.body = {
+        id: letter._id,
+        thema: letter.thema,
+        number: letter.number,
+        date: letter.date,
+        scanCopyFile: letter.scanCopyFile,
+    };
 }
 
 

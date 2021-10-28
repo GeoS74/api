@@ -17,10 +17,20 @@ const schema = new mongoose.Schema({
     },
     scanCopyFile: {
         type: String,
-        required: 'поле ${PATH} обязательно для заполнения',
+        //required: 'поле ${PATH} обязательно для заполнения',
     },
 }, {
     timestamps: true,
 });
+
+
+schema.index(
+    {
+        number: 'text'
+    }, 
+    {
+      name: 'NumberSearchIndex',
+      default_language: 'russian'
+  });
 
 module.exports = connection.model('Letter', schema);

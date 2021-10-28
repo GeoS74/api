@@ -108,6 +108,7 @@
 <div class="main">
     <h1>Реестр писем</h1>
 
+    <!--кнопка добавления новой переписки-->
     <button type="button" class="btn btn-outline-primary" id="addThema">Новая переписка</button>
     <script>//создать новую переписку
         addThema.onclick = _ => {
@@ -117,6 +118,7 @@
     </script>
 
 
+    <!--строка поиска-->
     <form id="searchForm" onsubmit="event.preventDefault()">
         <fieldset>
           <div class="form-group row">
@@ -221,16 +223,19 @@
         //change letterForm.elem -> this.elem
         //..
           if(this.getVal().error) {
+              console.log(this.getVal().error);
             let error_message = letterForm.elem.querySelector('.error_message');
             if(error_message)error_message.remove();
-            this.elem.querySelector('label').insertAdjacentHTML('afterend', `<span class="error_message">заполните это поле</span>`)
+            //this.elem.querySelector('label').insertAdjacentHTML('afterend', `<span class="error_message">заполните это поле</span>`)
             return;
           }
 
           hideAddThemaForm();
 
           //отрисовать новую тему
-          themas.render('afterbegin', createHtml(this.getVal()));
+          let targetDiv = document.querySelector('#_'+this.getVal().thema + ' h6');
+         
+          targetDiv.insertAdjacentHTML('afterend', renderLink(this.getVal()));
       });
   
   //позиционирование формы
@@ -238,17 +243,17 @@
   letterForm.elem.style.top = document.documentElement.clientHeight/4 + 'px';
   
    //text
-   new El('<input type="text" name="number" class="form-control" placeholder="Номер письма">')
+   new El('<input type="text" style="width:200px; float:left" name="number" class="form-control" placeholder="Номер письма"/>')
       .setParentNode(letterForm.elem.querySelector('.form-group'))
       .render();
 
-   new El('<input type="text" name="description" style="margin-top:30px" class="form-control" placeholder="Дата письма">')
+   new El('<input type="text" style="" name="description" style="margin-top:30px" class="form-control" placeholder="Дата письма"/>')
       .setParentNode(letterForm.elem.querySelector('.form-group'))
       .render()
       .render('afterend', '<small class="form-text text-muted">формат даты: ДД.ММ.ГГГГ</small>');
     
     //file
-   new El('<input type="file" name="scanCopyLetter" class="form-control">')
+   new El('<input type="file" name="scanCopyLetter" class="form-control"/>')
       .setParentNode(letterForm.elem.querySelector('.form-group'))
       .render();
 
@@ -257,11 +262,7 @@
       .setParentNode(letterForm.elem)
       .render()
       .on('click', async function(){
-        letterForm
-            // .setData(new FormData(letterForm.elem))
-            // .setPath('/letter')
-            // .setMethod('POST')
-            .query('POST', '/letter', new FormData(letterForm.elem));
+        letterForm.query('POST', '/letter', new FormData(letterForm.elem));
       });
   
   
@@ -277,6 +278,10 @@
 
 
 <script>//общие функции
+function renderLink(data){
+    return `<p class="card-text">исх. № <a href="/files/${data.scanCopyFile}">${data.number || 'б/н'} от ${data.date}</a></p>`;
+}
+
 function hideAddThemaForm(){ //скрыть модальное окно добавления темы
     let error_message = themaForm.elem.querySelector('.error_message');
     if(error_message)error_message.remove();
@@ -292,18 +297,27 @@ function hideAddThemaForm(){ //скрыть модальное окно доба
 }
 
 function createHtml(data){ //генерирует html для переписки
+    let letters = '';
+    if(data.letters){
+        for(let letter of data.letters){
+            letters += renderLink(letter);
+        }
+    }
+
     return `
-        <div class="card" id="${data.id}">
+        <div class="card" id="_${data.id}">
         <div class="card-body">
           <h4 class="card-title" onclick=showAddLetterForm(event) onmouseenter=showAddSpan(event) onmouseleave=hideAddSpan(event)>${data.thema}</h4>
           <h6 class="card-subtitle mb-2 text-muted">${data.description || ''}</h6>
+          ${letters}
         </div>
       </div>
     `;
 }
 
 function showAddLetterForm(event){
-  let idThema = event.target.parentElement.parentElement.parentElement.id;
+    //выкинуть знак _ из значения идентификатора
+  let idThema = event.target.parentElement.parentElement.parentElement.id.slice(1);
   letterForm.elem.querySelector('input[type=hidden]').value = idThema;
 
   letterForm.render();
@@ -329,6 +343,8 @@ function hideAddSpan(event){ //скрыть кнопку добавления п
         .setParentNode('.main')
         .render()
         .setHandler(function(){
+            console.log(this.getVal());
+
             for(let thema of this.getVal())
                 this.render('beforeend', createHtml(thema));
         })
