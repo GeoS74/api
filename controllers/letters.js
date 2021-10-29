@@ -42,52 +42,51 @@ module.exports.allThemas = async function(ctx, next){
 
 
 module.exports.searchThemas = async function(ctx, next){
-
-   const themas = await LetterThema.find({
-        $text: { 
-            $search: ctx.params.search_text,
-            $language: 'russian'
+    const letters = await LetterThema
+        .find()
+        .sort({_id: -1})
+        .populate({
+                path: 'foo',
+                match: { $text: { 
+                    $search: ctx.params.search_text,
+                    $language: 'russian'
+                }}
+            });
+    
+    const themas = await LetterThema
+        .find({ 
+            $text: { 
+                $search: ctx.params.search_text,
+                $language: 'russian'
         }})
         .sort({_id: -1})
-        .populate('foo');
+        .populate('foo');            
 
-
-   let letters = await Letter.find({
-        $text: { 
-            $search: ctx.params.search_text,
-            $language: 'russian'
-        }})
-        .sort({_id: -1})
-        .populate('thema');
-
-    console.log(themas);
-    console.log('~ ~ ~ ~ ~ ~ ~ ~ ~ ~');
-
-    let result = letters.map(letter => {
-        return letter;
+    const themasWithEmptyLetters = [];
+    const themasWithLetters = [];
+    
+    letters.map(letter => {
+        letter.foo.length ? themasWithLetters.push(letter) : themasWithEmptyLetters.push(letter);
     });
 
-    console.log(result);
-    console.log('----------------------');
+    const only_themas = themasWithEmptyLetters.filter(thema => {
+        for(let t of themas)
+            if(t.thema === thema.thema) return thema;
+        return false;
+    });
 
-
-
-    ctx.body = themas;
-
-
-// { results: { $elemMatch: { product: "xyz" } } }
-
-    // const themas = await LetterThema.find(
-    //     {}
-    // )
-    // .populate('foo');
-
-//    ctx.body = themas.map(thema => ({
-//         id: thema._id,
-//         thema: thema.thema,
-//         description: thema.description,
-//         createdAt: thema.createdAt,
-//    }));
+    ctx.body = themasWithLetters.concat(only_themas).map(thema => ({
+        id: thema._id,
+        thema: thema.thema,
+        description: thema.description,
+        createdAt: thema.createdAt,
+        letters: thema.foo.map(letter => ({
+            id: letter._id,
+            scanCopyFile: letter.scanCopyFile,
+            number: letter.number,
+            date: letter.date
+        })),
+   }));
 };
 
 
