@@ -140,7 +140,7 @@
 
             themas
                 //.setPath(`/themas/${fd.get('searchText')}`)
-                .query('GET', `/themas/${fd.get('searchText')}`);
+                .query('GET', `/themas/search/?needle=${fd.get('searchText')}`);
         };
     </script>
 
@@ -353,8 +353,16 @@ function hideAddSpan(event){ //скрыть кнопку добавления п
 
 
 
+<button type="button" id="load_next" class="btn btn-primary" style="margin-top:25px;">Загрузить ещё...</button>
 
+<script>//загрузка новых
+  load_next.onclick = _ => {
+       
+      let fd = new FormData(searchForm);
 
+      themas.query('GET', `/themas/search/?needle=${fd.get('searchText')}`);
+  };
+</script>
 
 
 

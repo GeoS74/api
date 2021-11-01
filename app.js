@@ -50,7 +50,7 @@ const router = new Router();
 
 
 router.get('/themas', allThemas);
-router.get('/themas/:search_text', searchThemas);
+router.get('/themas/search', searchThemas);
 
 
 router.post('/thema', koaBody, addThema);
@@ -80,8 +80,8 @@ router.post('/letter', koaBody, addLetter);
 
 
 
-router.post('/test', require('koa-body'), async ctx => {
-    ctx.body = ctx.request.body;
+router.get('/test', async ctx => {
+    ctx.body = ctx.request.query;
 });
 
 

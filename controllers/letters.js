@@ -23,7 +23,7 @@ module.exports.addThema = async function(ctx, next){
 
 
 module.exports.allThemas = async function(ctx, next){
-   const themas = await LetterThema.find().sort({_id: -1}).populate('foo');
+   const themas = await LetterThema.find().sort({_id: -1}).limit(1).populate('foo');
 
 //    ctx.body = themas;
    ctx.body = themas.map(thema => ({
@@ -42,24 +42,28 @@ module.exports.allThemas = async function(ctx, next){
 
 
 module.exports.searchThemas = async function(ctx, next){
+console.log(ctx.request.query);
     const letters = await LetterThema
         .find()
         .sort({_id: -1})
+        .limit(10)
         .populate({
                 path: 'foo',
                 match: { $text: { 
-                    $search: ctx.params.search_text,
+                    $search: ctx.request.query.needle,
                     $language: 'russian'
                 }}
             });
     
+
     const themas = await LetterThema
         .find({ 
             $text: { 
-                $search: ctx.params.search_text,
+                $search: ctx.request.query.needle,
                 $language: 'russian'
         }})
         .sort({_id: -1})
+        .limit(10)
         .populate('foo');            
 
     const themasWithEmptyLetters = [];
