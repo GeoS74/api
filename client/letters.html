@@ -39,9 +39,9 @@
         #searchForm button{float:right; width:15%}
         .card{border-collapse: collapse;}
 
-        #addThemaForm{width: 550px}
-        #addThemaForm div{margin: 0 0 35px 0;}
-        #addThemaForm button{margin: 0 15px 0 0;}
+        #addThemaForm, #addLetterForm{width: 550px}
+        #addThemaForm div, #addLetterForm div{margin: 0 0 35px 0;}
+        #addThemaForm button, #addLetterForm button{margin: 0 15px 0 0;}
         .modal_block{position:fixed; background:white; z-index:100501; padding:35px 45px; border-radius: 0px;}
 
         .tooltip_small{margin-left:15px; cursor:pointer; font-size:14px;}
@@ -130,17 +130,12 @@
         </fieldset>
     </form>
     <script>//поиск
-        searchForm.querySelector('button').onclick = _ => {
-             
+        searchForm.querySelector('button').onclick = _ => {  
             let fd = new FormData(searchForm);
-            
-            //searchForm.reset();
 
             themas.elem.innerHTML = '';
 
-            themas
-                //.setPath(`/themas/${fd.get('searchText')}`)
-                .query('GET', `/themas/search/?needle=${fd.get('searchText')}`);
+            themas.query('GET', `/themas?needle=${fd.get('searchText')}`);
         };
     </script>
 
@@ -192,11 +187,7 @@
         .setParentNode(themaForm.elem)
         .render()
         .on('click', async function(){
-            themaForm
-              // .setData(new FormData(themaForm.elem))
-              // .setPath('/thema')
-              // .setMethod('POST')
-              .query('POST', '/thema', new FormData(themaForm.elem));
+            themaForm.query('POST', '/thema', new FormData(themaForm.elem));
         });
     
     
@@ -212,19 +203,18 @@
 
 
 
+
 <script>//форма добаления письма
   const letterForm = new El('<form id="addLetterForm" class="modal_block">')
+      //.render()
       .render('afterbegin', '<input type="hidden" name="id_thema"/>')
       .render('afterbegin', '<legend>Скан-копия письма</legend>')
-      .render('beforeend', '<div class="form-group"><label for="exampleInputEmail1" class="form-label mt-4">Скан-копия письма</label>')
+      .render('beforeend', '<div class="form-group"><label for="exampleInputEmail1" class="form-label mt-4" style="width:100%">Добавьте атрибуты письма</label>')
       .on('submit', function(){event.preventDefault()})
       .setHandler(async function(){
-        //...
-        //change letterForm.elem -> this.elem
-        //..
           if(this.getVal().error) {
               console.log(this.getVal().error);
-            let error_message = letterForm.elem.querySelector('.error_message');
+            let error_message = this.elem.querySelector('.error_message');
             if(error_message)error_message.remove();
             //this.elem.querySelector('label').insertAdjacentHTML('afterend', `<span class="error_message">заполните это поле</span>`)
             return;
@@ -233,7 +223,9 @@
           hideAddThemaForm();
 
           //отрисовать новую тему
-          let targetDiv = document.querySelector('#_'+this.getVal().thema + ' h6');
+          //let targetDiv = document.querySelector('#_'+this.getVal().thema + ' h6');
+
+          let targetDiv = document.querySelector(`[data-thema-id="${this.getVal().thema}"] h6`);
          
           targetDiv.insertAdjacentHTML('afterend', renderLink(this.getVal()));
       });
@@ -243,17 +235,44 @@
   letterForm.elem.style.top = document.documentElement.clientHeight/4 + 'px';
   
    //text
-   new El('<input type="text" style="width:200px; float:left" name="number" class="form-control" placeholder="Номер письма"/>')
+   new El('<input type="text" name="number" class="form-control" style="display:inline-block; width:60%; margin-right:15px;" placeholder="Номер письма"/>')
       .setParentNode(letterForm.elem.querySelector('.form-group'))
       .render();
 
-   new El('<input type="text" style="" name="description" style="margin-top:30px" class="form-control" placeholder="Дата письма"/>')
+   new El('<input type="text" id="input_date" style="display:inline-block; width:32%; float:right" name="description" style="margin-top:30px" class="form-control" placeholder="__.__.____"/>')
       .setParentNode(letterForm.elem.querySelector('.form-group'))
       .render()
-      .render('afterend', '<small class="form-text text-muted">формат даты: ДД.ММ.ГГГГ</small>');
-    
+      .on('focus', function(){
+        console.log('focus');
+        
+        this.value = '__.__.____';
+
+      })
+      .on('blur', function(){
+        this.value = '';
+      })
+      .on('keydown', function(){
+        
+        //event.preventDefault();
+        let foo = this.value;
+
+        if(!event.key.match(/\d/)){
+          this.value = this.value;
+          //event.stopPropagation();
+          return;
+        }
+
+        console.log(event.key.match(/\d/));
+      });
+
+
+
+
+
+
+
     //file
-   new El('<input type="file" name="scanCopyLetter" class="form-control"/>')
+   new El('<input type="file" name="scanCopyLetter" style="margin-top:30px" class="form-control"/>')
       .setParentNode(letterForm.elem.querySelector('.form-group'))
       .render();
 
@@ -277,62 +296,7 @@
 
 
 
-<script>//общие функции
-function renderLink(data){
-    return `<p class="card-text">исх. № <a href="/files/${data.scanCopyFile}">${data.number || 'б/н'} от ${data.date}</a></p>`;
-}
 
-function hideAddThemaForm(){ //скрыть модальное окно добавления темы
-    let error_message = themaForm.elem.querySelector('.error_message');
-    if(error_message)error_message.remove();
-    themaForm.elem.reset();
-    themaForm.elem.remove();
-
-    error_message = letterForm.elem.querySelector('.error_message');
-    if(error_message)letterForm.remove();
-    letterForm.elem.reset();
-    letterForm.elem.remove();
-
-    background_layer.elem.remove();
-}
-
-function createHtml(data){ //генерирует html для переписки
-    let letters = '';
-    if(data.letters){
-        for(let letter of data.letters){
-            letters += renderLink(letter);
-        }
-    }
-
-    return `
-        <div class="card" id="_${data.id}">
-        <div class="card-body">
-          <h4 class="card-title" onclick=showAddLetterForm(event) onmouseenter=showAddSpan(event) onmouseleave=hideAddSpan(event)>${data.thema}</h4>
-          <h6 class="card-subtitle mb-2 text-muted">${data.description || ''}</h6>
-          ${letters}
-        </div>
-      </div>
-    `;
-}
-
-function showAddLetterForm(event){
-    //выкинуть знак _ из значения идентификатора
-  let idThema = event.target.parentElement.parentElement.parentElement.id.slice(1);
-  letterForm.elem.querySelector('input[type=hidden]').value = idThema;
-
-  letterForm.render();
-  background_layer.render();
-
-  console.log('id: ', idThema);
-}
-
-function showAddSpan(event){ //показать кнопку добавления письма
-    event.target.insertAdjacentHTML('beforeend', '<small class="text-muted tooltip_small">добавить ответ</small>');
-}
-function hideAddSpan(event){ //скрыть кнопку добавления письма
-    event.target.querySelector('small').remove();
-}
-</script>
 
 
 
@@ -345,6 +309,11 @@ function hideAddSpan(event){ //скрыть кнопку добавления п
         .setHandler(function(){
             console.log(this.getVal());
 
+            if(!this.getVal().length) {
+              load_next.hidden = !load_next.hidden;
+              return;
+            }
+
             for(let thema of this.getVal())
                 this.render('beforeend', createHtml(thema));
         })
@@ -354,15 +323,90 @@ function hideAddSpan(event){ //скрыть кнопку добавления п
 
 
 <button type="button" id="load_next" class="btn btn-primary" style="margin-top:25px;">Загрузить ещё...</button>
-
 <script>//загрузка новых
   load_next.onclick = _ => {
-       
       let fd = new FormData(searchForm);
 
-      themas.query('GET', `/themas/search/?needle=${fd.get('searchText')}`);
+      themas.query('GET', `/themas?needle=${fd.get('searchText')}&start_thema_id=${getLastIdThema.call(themas)}&start_letter_id=${getLastIdLetter.call(themas)}`);
   };
 </script>
+
+
+
+
+
+
+<script>//общие функции
+  function renderLink(data){
+      return `<p class="card-text">исх. № <a href="/files/${data.scanCopyFile}">${data.number || 'б/н'} от ${data.date}</a></p>`;
+  }
+  
+  function hideAddThemaForm(){ //скрыть модальное окно добавления темы
+      let error_message = themaForm.elem.querySelector('.error_message');
+      if(error_message)error_message.remove();
+      themaForm.elem.reset();
+      themaForm.elem.remove();
+  
+      error_message = letterForm.elem.querySelector('.error_message');
+      if(error_message)letterForm.remove();
+      letterForm.elem.reset();
+      letterForm.elem.remove();
+  
+      background_layer.elem.remove();
+  }
+  
+  function createHtml(data){ //генерирует html для переписки
+      return `
+          <div class="card" data-thema-id="${data.id}" data-letter-id="${data.last_letter_id || ''}">
+          <div class="card-body">
+            <h4 class="card-title" onclick=showAddLetterForm(event) onmouseenter=showAddSpan(event) onmouseleave=hideAddSpan(event)>${data.thema}</h4>
+            <h6 class="card-subtitle mb-2 text-muted">${data.description || ''}</h6>
+            ${createLetterHtml(data)}
+          </div>
+        </div>
+      `;
+  }
+
+  function createLetterHtml(data){
+    if(!data.letters) return '';
+
+    let letters = '';
+
+     for(let letter of data.letters) letters += renderLink(letter);
+    //for(let key in data.letters) letters += renderLink(data.letters);
+
+    return letters;
+  }
+  
+  function showAddLetterForm(event){
+    let idThema = event.target.parentElement.parentElement.parentElement.dataset.themaId;
+    letterForm.elem.querySelector('input[type=hidden]').value = idThema;
+  
+    letterForm.render();
+    background_layer.render();
+  }
+  
+  function showAddSpan(event){ //показать кнопку добавления письма
+      event.target.insertAdjacentHTML('beforeend', '<small class="text-muted tooltip_small">добавить ответ</small>');
+  }
+  
+  function hideAddSpan(event){ //скрыть кнопку добавления письма
+      event.target.querySelector('small').remove();
+  }
+  
+  function getLastIdThema(){ //возвращает id последней темы, полученной клиентом
+    return this.elem.lastElementChild.dataset.themaId;
+  }
+
+  function getLastIdLetter(){ //возвращает id последнего письма, по которому была пагинация
+    return this.elem.lastElementChild.dataset.letterId;
+  }
+</script>
+
+
+
+
+
 
 
 

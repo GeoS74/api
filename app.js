@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const pug = require('pug');
 const {allUsers, userById, createUser, updateUser} = require('./controllers/user');
-const {allThemas, addThema, searchThemas, addLetter} = require('./controllers/letters');
+const {handleSearchVars, allThemas, addThema, searchThemas, addLetter} = require('./controllers/letters');
 const koaBody = require('./libs/koaBody');
 
 const app = new Koa();
@@ -49,8 +49,8 @@ const router = new Router();
 
 
 
-router.get('/themas', allThemas);
-router.get('/themas/search', searchThemas);
+router.get('/themas', handleSearchVars, allThemas, searchThemas);
+//router.get('/themas/search', searchThemas);
 
 
 router.post('/thema', koaBody, addThema);
