@@ -37,8 +37,7 @@ schema.virtual('foo', {
 
 schema.index(
     {
-        thema: 'text',
-        foo: 'text'
+        thema: 'text'
     }, 
     {
       name: 'TextSearchIndex',

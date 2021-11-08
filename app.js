@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const pug = require('pug');
 const {allUsers, userById, createUser, updateUser} = require('./controllers/user');
-const {handleSearchVars, allThemas, addThema, searchThemas, addLetter} = require('./controllers/letters');
+const {manyCreate, handleSearchVars, allThemas, addThema, searchThemas, addLetter} = require('./controllers/letters');
 const koaBody = require('./libs/koaBody');
 
 const app = new Koa();
@@ -47,6 +47,8 @@ app.use(async (ctx, next) => {
 
 const router = new Router();
 
+
+router.get('/manycreate', manyCreate);
 
 
 router.get('/themas', handleSearchVars, allThemas, searchThemas);
