@@ -8,8 +8,16 @@ const schema = new mongoose.Schema({
         ref: LetterThema,
         required: 'поле ${PATH} обязательно для заполнения',
     },
-    number: {
+    thema_tags: { //поле для быстрого поиска с учётом связанной темы
+        type: String,
+        required: 'поле ${PATH} обязательно для заполнения',
+    },
+    description: {
         type: String
+    },
+    number: {
+        type: String,
+        default: 'б/н'
     },
     date: {
         type: Date,
@@ -26,10 +34,11 @@ const schema = new mongoose.Schema({
 
 schema.index(
     {
-        number: 'text'
+        description: 'text',
+        thema_tags: 'text'
     }, 
     {
-      name: 'NumberSearchIndex',
+      name: 'LetterSearchIndex',
       default_language: 'russian'
   });
 

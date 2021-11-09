@@ -2,24 +2,17 @@ const connection = require('../libs/connection');
 const mongoose = require('mongoose');
 
 const schema = new mongoose.Schema({
-    thema: {
+    title: {
         type: String,
         required: 'заполните поле Тема письма',
-    },
-    description:{
-        type: String
     },
     user: {
         type: mongoose.ObjectId,
     }
 }, {
     timestamps: true,
-    toJSON: {
-        virtuals: true
-    },
-    toObject: {
-        virtuals: true
-    }
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
 });
 
 
@@ -27,7 +20,7 @@ const schema = new mongoose.Schema({
 
 
 // const Letter = require('./LetterThema');
-schema.virtual('foo', {
+schema.virtual('letters', {
     ref: 'Letter',
     localField: '_id',
     foreignField: 'thema'
@@ -36,9 +29,7 @@ schema.virtual('foo', {
 
 
 schema.index(
-    {
-        thema: 'text'
-    }, 
+    { title: 'text' }, 
     {
       name: 'TextSearchIndex',
       default_language: 'russian'

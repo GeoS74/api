@@ -5,13 +5,152 @@ const path = require('path');
 const Letter = require('../models/Letter');
 const LetterThema = require('../models/LetterThema');
 
+//if(!mongoose.Types.ObjectId.isValid(subcategory)){
+
+module.exports.manyCreate = async function(ctx, next){
+        
+        const arr = [
+            {thema: 'Lorem ipsum dolor sit amet'},
+            {thema: 'Pellentesque habitant morbi tristique'},
+            {thema: 'Vestibulum efficitur pharetra neque'},
+            {thema: 'Aliquam et augue'},
+            {thema: 'Morbi id mauris condimentum'},
+            {thema: 'Donec tincidunt dapibus libero'},
+            {thema: 'Curabitur eu nibh eu lorem posuere sagittis'},
+            {thema: 'Nam vitae porta odio'},
+            {thema: 'Mauris vitae nulla rhoncu'},
+            {thema: 'Cras lacinia sapien'},
+            {thema: 'Pellentesque pharetra eleifend enim non pulvinar'},
+            {thema: 'Duis tincidunt ultrices neque quis vestibulum'},
+            {thema: 'Nunc dignissim felis magna'},
+            {thema: 'Pellentesque'},
+            {thema: 'Vestibulum vulputate condimentum enim in varius'},
+            {thema: 'Class aptent taciti sociosqu'},
+            {thema: 'litora torquent per'},
+            {thema: 'Phasellus sed facilisis ante'},
+            {thema: 'Quisque fringilla'},
+            {thema: 'neque leo vestibulum ipsum'},
+        ];
+
+
+
+        for(let i = 0; i < 10000; i++) await LetterThema.create(arr);
+    
+        ctx.body = 'ok';
+};
+
+
+module.exports.addThema = async function(ctx, next){
+    if(!ctx.request.body.title) return ctx.throw(400, 'Тема должна быть заполнена');
+    const thema = await LetterThema.create({
+        title: ctx.request.body.title
+        //description: ctx.request.body.description || undefined
+        // user: ...
+    });
+
+    ctx.body = {
+        id: thema._id,
+        title: thema.title,
+        createdAt: thema.createdAt, 
+    };
+};
 
 
 const limitDocs = 20;
 
 
-//работает - агрегация
+module.exports.handleSearchVars = async function(ctx, next){
+    if(ctx.request.query.start_thema_id) 
+        if(!isValidObjectId(ctx.request.query.thema_id)) ctx.throw(400, "thema_id is not ObjectId");
+
+    await next();
+};
+
+module.exports.allThemas = async function(ctx, next){
+    if(ctx.request.query.needle) return await next();
+
+    const finder = {};
+    if(ctx.request.query.start_thema_id) finder._id = {$lt: ctx.request.query.start_thema_id};
+
+   const themas = await LetterThema
+    .find(finder)
+    .sort({_id: -1}).limit(limitDocs)
+    .populate('letters');
+
+    ctx.body = themas.map(thema => ({
+        id: thema._id,
+        title: thema.title,
+        createdAt: thema.createdAt,
+        letters: thema.letters.map(letter => ({
+            id: letter._id,
+            scanCopyFile: letter.scanCopyFile,
+            number: letter.number,
+            date: letter.date,
+            description: letter.description,
+        })),
+   }));
+};
+
 module.exports.searchThemas = async function(ctx, next){
+    const finder = {
+        $text: { 
+            $search: ctx.request.query.needle,
+            $language: 'russian'
+        }};
+    
+    if(ctx.request.query.thema_id) finder._id = {$lt: ctx.request.query.thema_id};
+    
+    const letters = await Letter
+        .find({
+            $text: { 
+                $search: ctx.request.query.needle,
+                $language: 'russian'
+            }})
+        .sort({_id: -1}).limit(limitDocs)
+        .populate('thema');
+
+    let themas = {};
+    letters.map(letter => {
+        if(themas[letter.thema._id]){
+            themas[letter.thema._id].letters.push(getLetterStruct(letter));
+            return;
+        }
+
+        themas[letter.thema._id] = {
+            _id: letter.thema._id,
+            title: letter.thema.title,
+            createdAt: letter.thema.createdAt,
+            updatedAt: letter.thema.updatedAt,
+            letters: [getLetterStruct(letter)]
+        };
+    });
+
+    //console.log(letters);
+    console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~');
+    console.log(themas);
+    console.log('all');
+    console.log('-------------------------------');
+
+    ctx.body = Object.values(themas);
+};
+
+function getLetterStruct(letter){
+    return {
+        _id: letter._id,
+        description: letter.description,
+        number: letter.number,
+        date: letter.date,
+        pathFile: letter.scanCopyFile,
+        createdAt: letter.createdAt,
+        updatedAt: letter.updatedAt,
+    };
+}
+
+
+
+
+//работает - агрегация
+module.exports._searchThemas = async function(ctx, next){
     let start = Date.now();
 
     const regexp = new RegExp(ctx.request.query.needle);
@@ -19,14 +158,14 @@ module.exports.searchThemas = async function(ctx, next){
     const result = await LetterThema
         .aggregate([
             //{ $match:{ '_id': { $lt: new mongoose.Types.ObjectId('6188cb6691ec020242f21239') } } },
-            { $sort: {'_id': -1} },
+            
             
             //  {
             //     // $match: { $text: { 
             //     //     $search: ctx.request.query.needle,
             //     //     $language: 'russian'
             //     // }},
-
+            { $sort: {'_id': -1} }, //этап сортировки должен быть первым иначе поиск тормозит. При этом выдачу почему-то трясёт
             {
                 $lookup: {
                     from: "letters", 
@@ -228,7 +367,7 @@ module.exports.__searchThemas = async function(ctx, next){
 
 //тест агрегации
 //ограничения https://docs.mongodb.com/v4.2/tutorial/text-search-in-aggregation/
-module.exports.__no__searchThemas = async function(ctx, next){
+module.exports.___searchThemas = async function(ctx, next){
     let start = Date.now();
 
     const regexp = new RegExp(ctx.request.query.needle);
@@ -310,102 +449,6 @@ module.exports.__no__searchThemas = async function(ctx, next){
 
 
 
-
-
-
-
-
-
-module.exports.handleSearchVars = async function(ctx, next){
-    if(ctx.request.query.start_thema_id) 
-        if(!isValidObjectId(ctx.request.query.thema_id)) ctx.throw(400, "thema_id is not ObjectId");
-
-    await next();
-};
-
-//отдать темы переписки
-module.exports.allThemas = async function(ctx, next){
-    if(ctx.request.query.needle) return await next();
-
-    const finder = {};
-    if(ctx.request.query.start_thema_id) finder._id = {$lt: ctx.request.query.start_thema_id};
-
-   const themas = await LetterThema
-    .find(finder)
-    .sort({_id: -1}).limit(limitDocs)
-    .populate('foo');
-
-    ctx.body = themas.map(thema => ({
-        id: thema._id,
-        thema: thema.thema,
-        description: thema.description,
-        createdAt: thema.createdAt,
-        letters: thema.foo.map(letter => ({
-            id: letter._id,
-            scanCopyFile: letter.scanCopyFile,
-            number: letter.number,
-            date: letter.date
-        })),
-   }));
-};
-
-
-
-//для заполнения БД
-module.exports.manyCreate = async function(ctx, next){
-        
-    const arr = [
-        {thema: 'Lorem ipsum dolor sit amet'},
-        {thema: 'Pellentesque habitant morbi tristique'},
-        {thema: 'Vestibulum efficitur pharetra neque'},
-        {thema: 'Aliquam et augue'},
-        {thema: 'Morbi id mauris condimentum'},
-        {thema: 'Donec tincidunt dapibus libero'},
-        {thema: 'Curabitur eu nibh eu lorem posuere sagittis'},
-        {thema: 'Nam vitae porta odio'},
-        {thema: 'Mauris vitae nulla rhoncu'},
-        {thema: 'Cras lacinia sapien'},
-        {thema: 'Pellentesque pharetra eleifend enim non pulvinar'},
-        {thema: 'Duis tincidunt ultrices neque quis vestibulum'},
-        {thema: 'Nunc dignissim felis magna'},
-        {thema: 'Pellentesque'},
-        {thema: 'Vestibulum vulputate condimentum enim in varius'},
-        {thema: 'Class aptent taciti sociosqu'},
-        {thema: 'litora torquent per'},
-        {thema: 'Phasellus sed facilisis ante'},
-        {thema: 'Quisque fringilla'},
-        {thema: 'neque leo vestibulum ipsum'},
-    ];
-
-
-
-    for(let i = 0; i < 10000; i++) await LetterThema.create(arr);
-
-    ctx.body = 'ok';
-};
-
-//добавление темы
-module.exports.addThema = async function(ctx, next){
-if(!ctx.request.body.thema) return ctx.throw(400, 'Тема должна быть заполнена');
-const thema = await LetterThema.create({
-    thema: ctx.request.body.thema,
-    description: ctx.request.body.description || undefined
-    // user: ...
-});
-
-ctx.body = {
-    id: thema._id,
-    thema: thema.thema,
-    description: thema.description,
-    createdAt: thema.createdAt, 
-};
-};
-
-
-
-
-
-/*
 module.exports._searchThemas_ = async function(ctx, next){
 console.log(ctx.request.query);
 
@@ -463,7 +506,7 @@ console.log(ctx.request.query);
         })),
    }));
 };
-*/
+
 
 
 module.exports.addLetter = async function (ctx, next){
@@ -480,19 +523,26 @@ module.exports.addLetter = async function (ctx, next){
     //     if(err) throw err;
     // });
 
+    const tags = await LetterThema.findOne({'_id': ctx.request.body.id_thema});
+
     const letter = await Letter.create({
         thema: ctx.request.body.id_thema,
+        thema_tags: tags.title,
         number: ctx.request.body.number,
-        date: ctx.request.body.date,
+        date: ctx.request.body.date || undefined,
+        description: ctx.request.body.description || undefined,
         //uncomment this
+        //
         //scanCopyFile: newFileName
     });
+
 
     ctx.body = {
         id: letter._id,
         thema: letter.thema,
         number: letter.number,
         date: letter.date,
+        description: letter.description,
         scanCopyFile: letter.scanCopyFile,
     };
 }

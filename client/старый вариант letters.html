@@ -1,0 +1,508 @@
+<!DOCTYPE HTML> 
+<html lang="ru">
+<head>
+  <title>Реестр писем</title>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8"/> 
+    <meta name="viewport" content="width=device-width"/>
+  
+    <link href="/css/bootstrap.min.css" rel="stylesheet" type="text/css"/><!--https://bootswatch.com/cosmo/-->
+    <script type="text/javascript" src="/libs/El.js"></script>
+    <script>
+        //@Override
+        Backend.prototype.query = function(method, path, data)
+        {
+          
+          let foo = async function(){
+            path = path || this.backend.path;
+            method = method || this.backend.method;
+            data = data || this.backend.data;
+            let response = await fetch(path, {
+              method: method,
+              headers: {},
+              body: method !== 'GET' ? data : null,
+            });
+
+              try{
+                  this.setVal(await response.json());
+              }catch(error){
+                  console.log(error);
+              }
+          }.call(this);
+            return this;
+        };
+    </script>
+    <style>
+        .main{margin: 20px; max-width:800px;}
+        h1{margin: 35px 0}
+        
+        
+        #searchForm{margin: 35px 0}
+        #searchForm input[type=text]{float:left;width:85%}
+        #searchForm button{float:right; width:15%}
+        .card{border-collapse: collapse;}
+
+        #addThemaForm, #addLetterForm{width: 550px}
+        #addThemaForm div, #addLetterForm div{margin: 0 0 35px 0;}
+        #addThemaForm button, #addLetterForm button{margin: 0 15px 0 0;}
+        .modal_block{position:fixed; background:white; z-index:100501; padding:35px 45px; border-radius: 0px;}
+
+        .tooltip_small{margin-left:15px; cursor:pointer; font-size:14px;}
+        .tooltip_small:hover{color: var(--bs-body-color) !important;}
+
+        .error_message{color:red; margin-left:15px}
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+          <a class="navbar-brand" href="#">MAGNUS</a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarColor01" aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+      
+          <div class="collapse navbar-collapse" id="navbarColor01">
+            <ul class="navbar-nav me-auto">
+              <li class="nav-item">
+                <a class="nav-link active" href="#">Home
+                  <span class="visually-hidden">(current)</span>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#">Features</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#">Pricing</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#">About</a>
+              </li>
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Dropdown</a>
+                <div class="dropdown-menu">
+                  <a class="dropdown-item" href="#">Action</a>
+                  <a class="dropdown-item" href="#">Another action</a>
+                  <a class="dropdown-item" href="#">Something else here</a>
+                  <div class="dropdown-divider"></div>
+                  <a class="dropdown-item" href="#">Separated link</a>
+                </div>
+              </li>
+            </ul>
+            <!-- <form class="d-flex">
+              <input class="form-control me-sm-2" type="text" placeholder="Search">
+              <button class="btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
+            </form> -->
+            <div class="d-flex">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                      <a class="nav-link" href="#">Войти
+               
+                      </a>
+                    </li>
+                    <li class="nav-item">
+                      <a class="nav-link" href="#">Регистрация</a>
+                    </li>
+                  </ul>
+            </div>
+          </div>
+        </div>
+    </nav>
+
+<div class="main">
+    <h1>Реестр писем</h1>
+
+    <!--кнопка добавления новой переписки-->
+    <button type="button" class="btn btn-outline-primary" id="addThema">Новая переписка</button>
+    <script>//создать новую переписку
+        addThema.onclick = _ => {
+          themaForm.render();
+          background_layer.render();
+        };
+    </script>
+
+
+    <!--строка поиска-->
+    <form id="searchForm" onsubmit="event.preventDefault()">
+        <fieldset>
+          <div class="form-group row">
+            <div class="form-group">
+                <input type="text" name="searchText" class="form-control" aria-describedby="emailHelp" placeholder="Ввведите номер письма">
+                <button type="submit" class="btn btn-primary">Поиск</button>
+            </div>
+          </div>
+        </fieldset>
+    </form>
+    <script>//поиск
+        searchForm.querySelector('button').onclick = _ => {  
+            let fd = new FormData(searchForm);
+
+            themas.elem.innerHTML = '';
+
+            themas.query('GET', `/themas?needle=${fd.get('searchText')}`);
+        };
+    </script>
+
+
+    <script>//фон для модального окна
+        let background_layer = new El('<div style="position: fixed; top: 0px; width: 100%; height: 100%; background: rgb(117, 117, 117); z-index: 100500; opacity: 0.5;">')
+            .on('click', function(){
+              hideAddThemaForm();
+            });
+    </script>
+
+
+  <script>//форма создания темы
+    const themaForm = new El('<form id="addThemaForm" class="modal_block">')
+        .render('afterbegin', '<legend>Новая переписка</legend>')
+        .render('beforeend', '<div class="form-group"><label for="exampleInputEmail1" class="form-label mt-4">Тема переписки</label>')
+        .on('submit', function(){event.preventDefault()})
+        .setHandler(async function(){
+            if(this.getVal().error) {
+              let error_message = themaForm.elem.querySelector('.error_message');
+              if(error_message)error_message.remove();
+              this.elem.querySelector('label').insertAdjacentHTML('afterend', `<span class="error_message">заполните это поле</span>`)
+              return;
+            }
+
+            hideAddThemaForm();
+
+            //отрисовать новую тему
+            themas.render('afterbegin', createHtmlThema(this.getVal()));
+        });
+    
+    //позиционирование формы
+    themaForm.elem.style.left = document.documentElement.clientWidth/4 + 'px';
+    themaForm.elem.style.top = document.documentElement.clientHeight/4 + 'px';
+    
+     //text
+     new El('<input type="text" name="title" class="form-control" placeholder="Введите тему"/>')
+        .setParentNode(themaForm.elem.querySelector('.form-group'))
+        .render()
+        .render('afterend', '<small class="form-text text-muted">Тема переписки будет общей для всех писем</small>');
+
+    //  new El('<input type="text" name="description" style="margin-top:30px" class="form-control" placeholder="Добавьте свой комментарий">')
+    //     .setParentNode(themaForm.elem.querySelector('.form-group'))
+    //     .render()
+    //     .render('afterend', '<small class="form-text text-muted">Небольшое описание может быть полезным</small>');
+
+    //submit
+    new El('<button type="submit" class="btn btn-primary">Создать</button>')
+        .setParentNode(themaForm.elem)
+        .render()
+        .on('click', async function(){
+            themaForm.query('POST', '/thema', new FormData(themaForm.elem));
+        });
+    
+    
+    new El('<button type="button" class="btn btn-outline-primary">Отмена</button>')
+        .setParentNode(themaForm.elem)
+        .render()
+        .on('click', function(){
+            hideAddThemaForm();
+        });
+    </script>
+
+
+
+
+
+
+<script>//форма добаления письма
+  const letterForm = new El('<form id="addLetterForm" class="modal_block">')
+      .render('afterbegin', '<input type="hidden" name="id_thema"/>')
+      .render('afterbegin', '<legend>Скан-копия письма</legend>')
+      .render('beforeend', '<div class="form-group"><label for="exampleInputEmail1" class="form-label mt-4" style="width:100%">Добавьте атрибуты письма</label>')
+      .on('submit', function(){event.preventDefault()})
+      .setHandler(async function(){
+          if(this.getVal().error) {
+              console.log(this.getVal().error);
+            let error_message = this.elem.querySelector('.error_message');
+            if(error_message)error_message.remove();
+            //this.elem.querySelector('label').insertAdjacentHTML('afterend', `<span class="error_message">заполните это поле</span>`)
+            return;
+          }
+
+          hideAddThemaForm();
+
+          //отрисовать новую тему
+          //let targetDiv = document.querySelector('#_'+this.getVal().thema + ' h6');
+
+          let targetDiv = document.querySelector(`[data-thema-id="${this.getVal().thema}"] h6`);
+         
+          targetDiv.insertAdjacentHTML('afterend', createHtmlLetter(this.getVal()));
+      });
+  
+  //позиционирование формы
+  letterForm.elem.style.left = document.documentElement.clientWidth/4 + 'px';
+  letterForm.elem.style.top = document.documentElement.clientHeight/4 + 'px';
+  
+   //text
+   new El('<input type="text" name="number" class="form-control" style="display:inline-block; width:60%; margin-right:15px;" placeholder="Номер письма"/>')
+      .setParentNode(letterForm.elem.querySelector('.form-group'))
+      .render();
+
+   new El('<input type="text" id="input_date" style="display:inline-block; width:32%; float:right" name="description" style="margin-top:30px" class="form-control" placeholder="__.__.____"/>')
+      .setParentNode(letterForm.elem.querySelector('.form-group'))
+      .render()
+      .on('focus', function(){
+        console.log('focus');
+        
+        this.value = '__.__.____';
+
+      })
+      .on('blur', function(){
+        this.value = '';
+      })
+      .on('keydown', function(){
+        
+        //event.preventDefault();
+        let foo = this.value;
+
+        if(!event.key.match(/\d/)){
+          this.value = this.value;
+          //event.stopPropagation();
+          return;
+        }
+
+        console.log(event.key.match(/\d/));
+      });
+
+
+
+
+
+
+
+    //file
+   new El('<input type="file" name="scanCopyLetter" style="margin-top:30px" class="form-control"/>')
+      .setParentNode(letterForm.elem.querySelector('.form-group'))
+      .render();
+
+  //submit
+  new El('<button type="submit" class="btn btn-primary">Создать</button>')
+      .setParentNode(letterForm.elem)
+      .render()
+      .on('click', async function(){
+        letterForm.query('POST', '/letter', new FormData(letterForm.elem));
+      });
+  
+  
+  new El('<button type="button" class="btn btn-outline-primary">Отмена</button>')
+      .setParentNode(letterForm.elem)
+      .render()
+      .on('click', function(){
+          hideAddThemaForm();
+      });
+  </script>
+
+
+
+
+
+
+
+
+
+
+<script>//общий список писем
+    const themas = new El('<div id="content">')
+        .setParentNode('.main')
+        .render()
+        .setHandler(function(){
+            console.log(this.getVal());
+
+            if(!this.getVal().length) {
+              load_next.hidden = !load_next.hidden;
+              return;
+            }
+
+            for(let thema of this.getVal())
+                this.render('beforeend', createHtmlThema(thema));
+        })
+        .query('GET', '/themas');
+</script>
+
+
+
+<button type="button" id="load_next" class="btn btn-primary" style="margin-top:25px;">Загрузить ещё...</button>
+<script>//загрузка новых
+  load_next.onclick = _ => {
+      let fd = new FormData(searchForm);
+
+      themas.query('GET', `/themas?needle=${fd.get('searchText')}&start_thema_id=${getLastIdThema.call(themas)}&start_letter_id=${getLastIdLetter.call(themas)}`);
+  };
+</script>
+
+
+
+
+
+
+<script>//общие функции
+  
+  
+  function hideAddThemaForm(){ //скрыть модальное окно добавления темы
+      let error_message = themaForm.elem.querySelector('.error_message');
+      if(error_message)error_message.remove();
+      themaForm.elem.reset();
+      themaForm.elem.remove();
+  
+      error_message = letterForm.elem.querySelector('.error_message');
+      if(error_message)letterForm.remove();
+      letterForm.elem.reset();
+      letterForm.elem.remove();
+  
+      background_layer.elem.remove();
+  }
+  
+  function createHtmlThema(data){ //генерирует html для переписки
+      return `
+          <div class="card" data-thema-id="${data.id}">
+          <div class="card-body">
+            <h4 class="card-title" onclick=showAddLetterForm(event) onmouseenter=showAddSpan(event) onmouseleave=hideAddSpan(event)>${data.title}</h4>
+            ${createLetterHtml(data)}
+          </div>
+        </div>
+      `;
+  }
+
+  function createHtmlLetter(data){
+      return `<p class="card-text">исх. № <a href="/files/${data.scanCopyFile}">${data.number || 'б/н'} от ${data.date}</a></p>`;
+  }
+
+  function createLetterHtml(data){
+    if(!data.letters) return '';
+
+    let letters = '';
+
+    for(let letter of data.letters) letters += createHtmlLetter(letter);
+
+    return letters;
+  }
+  
+  function showAddLetterForm(event){
+    let s = event.target.closest('small');
+    if(!s) return;
+
+    let idThema = s.parentElement.parentElement.parentElement.dataset.themaId;
+    letterForm.elem.querySelector('input[type=hidden]').value = idThema;
+  
+    letterForm.render();
+    background_layer.render();
+  }
+  
+  function showAddSpan(event){ //показать кнопку добавления письма
+      event.target.insertAdjacentHTML('beforeend', '<small class="text-muted tooltip_small">добавить ответ</small>');
+  }
+  
+  function hideAddSpan(event){ //скрыть кнопку добавления письма
+      event.target.querySelector('small').remove();
+  }
+  
+  function getLastIdThema(){ //возвращает id последней темы, полученной клиентом
+    return this.elem.lastElementChild.dataset.themaId;
+  }
+
+  function getLastIdLetter(){ //возвращает id последнего письма, по которому была пагинация
+    return this.elem.lastElementChild.dataset.letterId;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+      <!-- <div class="card">
+        <div class="card-body">
+          <h4 class="card-title">Верификация карданного вала</h4>
+          <small class="text-muted">3 days ago</small>
+          <h6 class="card-subtitle mb-2 text-muted">Запрос на завод, Андрею не понравилось наличие краски</h6>
+          <p class="card-text">исх. № <a href="">515/к от 21.10.2021</a></p>
+          <a href="#" class="card-link">Card link</a>
+          <a href="#" class="card-link">Another link</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h4 class="card-title">Запрос оригинальности подшипника 2007124А</h4>
+          <p class="card-text">исх. № <a href="">404/к от 21.10.2021</a></p>
+          <p class="card-text" style="margin-left: 25px;">вх. № <a href="">ТСИБ-099-К-13245 от 15.09.2021</a></p>
+          <a href="#" class="card-link">Card link</a>
+          <a href="#" class="card-link">Another link</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h4 class="card-title">Уведомление о закрытии предписаний</h4>
+          <p class="card-text">исх. № <a href="">100/к от 10.09.2021</a></p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h4 class="card-title">Верификация карданного вала</h4>
+          <p class="card-text">исх. № <a href="">515/к от 21.10.2021</a></p>
+          <p class="card-text">исх. № <a href="">100/к от 10.09.2021</a></p>
+          <p class="card-text" style="margin-left: 25px;">вх. № <a href="">ТСИБ-099-К-13245 от 15.09.2021</a></p>
+        </div>
+      </div>
+
+
+      <div class="card">
+        <div class="card-body">
+          <h4 class="card-title">Верификация карданного вала</h4>
+          <h6 class="card-subtitle mb-2 text-muted">Запрос на завод</h6>
+          <p class="card-text">исх. № <a href="">515/к от 21.10.2021</a></p>
+          <a href="#" class="card-link">Card link</a>
+          <a href="#" class="card-link">Another link</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h4 class="card-title">Запрос оригинальности подшипника</h4>
+          <p class="card-text">исх. № <a href="">404/к от 21.10.2021</a></p>
+          <p class="card-text" style="margin-left: 25px;">вх. № <a href="">ТСИБ-099-К-13245 от 15.09.2021</a></p>
+          <a href="#" class="card-link">Card link</a>
+          <a href="#" class="card-link">Another link</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h4 class="card-title">Уведомление о закрытии предписаний</h4>
+          <p class="card-text">исх. № <a href="">100/к от 10.09.2021</a></p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h4 class="card-title">Верификация карданного вала</h4>
+          <p class="card-text">исх. № <a href="">515/к от 21.10.2021</a></p>
+          <p class="card-text">исх. № <a href="">100/к от 10.09.2021</a></p>
+          <p class="card-text" style="margin-left: 25px;">вх. № <a href="">ТСИБ-099-К-13245 от 15.09.2021</a></p>
+        </div>
+      </div>
+
+      <script>
+          let foo = document.querySelectorAll('.card-text');
+
+          for(let e of foo) {
+              e.addEventListener('mouseenter', function(){
+                this.insertAdjacentHTML('beforeend', '<small class="text-muted" style="margin-left:15px; cursor:pointer">добавить ответ</small>');
+              });
+
+              e.addEventListener('mouseleave', function(){
+                    this.querySelector('small').remove();
+                });
+          }
+      </script> -->
+
+</div>
+</body>
+</html>
