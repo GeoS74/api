@@ -47,6 +47,10 @@ app.use(async (ctx, next) => {
 
 const router = new Router();
 
+router.get('/hello', ctx => {
+    ctx.body = 'ok';
+});
+
 
 router.get('/manycreate', manyCreate);
 
@@ -70,7 +74,7 @@ router.del('/themas', ctx => {
 
 router.get('/letters', async ctx => {
     ctx.set('content-type', 'text/html');
-    ctx.body = fs.createReadStream(path.join(__dirname, 'client/letters.html'));
+    ctx.body = fs.createReadStream(path.join(__dirname, 'client/boot.html'));
 });
 router.post('/letter', koaBody, addLetter);
 // router.del('/letter/:id', allLetter);

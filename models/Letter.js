@@ -7,6 +7,7 @@ const schema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: LetterThema,
         required: 'поле ${PATH} обязательно для заполнения',
+        index: true //обязательно индексировать, т.к. это поле используется в poopulate
     },
     thema_tags: { //поле для быстрого поиска с учётом связанной темы
         type: String,
