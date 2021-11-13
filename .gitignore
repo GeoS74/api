@@ -1,3 +1,4 @@
 node_modules/
 secret.env
 files/
+client/w.md

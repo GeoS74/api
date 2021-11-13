@@ -9,8 +9,6 @@ const limitDocs = 3;
 
 
 module.exports.manyCreate = async function(ctx, next){
-    let start = Date.now();
-
         const arr = [
             {title: 'Lorem ipsum dolor sit amet'},
             {title: 'Pellentesque habitant morbi tristique'},
@@ -36,7 +34,7 @@ module.exports.manyCreate = async function(ctx, next){
 
 
 
-        for(let i = 0; i < 30000; i++) {
+        for(let i = 0; i < 50000; i++) {
            let themas = await LetterThema.create(arr);
 
            let letters = [];
@@ -51,8 +49,6 @@ module.exports.manyCreate = async function(ctx, next){
            await Letter.create(letters);
         }
 
-        console.log( 'run time: ', (Date.now() - start)/1000, ' sec' );
-    
         ctx.body = 'run time: ' + ((Date.now() - start)/1000) + ' sec';
 };
 
@@ -124,8 +120,6 @@ module.exports.handleSearchVars = async function(ctx, next){
 module.exports.allThemas = async function(ctx, next){
     if(ctx.request.query.needle) return await next();
 
-    let start = Date.now();
-
     const finder = {};
 
     if(ctx.request.query.thema_id) finder._id = {$lt: ctx.request.query.thema_id};
@@ -135,8 +129,6 @@ module.exports.allThemas = async function(ctx, next){
     .sort({_id: -1}).limit(limitDocs)
     .populate('letters');
 
-    console.log( 'populate run time: ', (Date.now() - start)/1000, ' sec' );
-
     ctx.body = themas.map(thema => ({
         id: thema._id,
         title: thema.title,
@@ -144,26 +136,35 @@ module.exports.allThemas = async function(ctx, next){
         updatedAt: thema.updatedAt,
         letters: thema.letters.map(letter => getLetterStruct(letter)),
     }));
-
-    console.log( 'load run time: ', (Date.now() - start)/1000, ' sec' );
 };
 
-module.exports.searchThemas = async function(ctx, next){
-    let start = Date.now();
-
-    const finder = {
+//Вариант 4
+//
+//почитать про $meta
+//https://docs.mongodb.com/manual/reference/operator/aggregation/meta/#mongodb-expression-exp.-meta
+module.exports.searchThemas_ = async function(ctx, next){
+    console.log('тест Вариант 4:');
+    const filter = {
         $text: { 
             $search: ctx.request.query.needle,
             $language: 'russian'
         }};
 
-    if(ctx.request.query.letter_id) finder._id = {$lt: ctx.request.query.letter_id};
+    const projection = {
+        score: { $meta: "textScore" } //добавить в данные оценку текстового поиска (релевантность)
+    };
+
+    if(ctx.request.query.letter_id) filter._id = {$lt: ctx.request.query.letter_id};
 
     const letters = await Letter
-        .find(finder)
-        .sort({_id: -1}).limit(limitDocs)
+        .find(filter, projection)
+        .sort({
+            _id: -1,
+           score: { $meta: "textScore" }
+        }).limit(limitDocs)
         .populate('thema');
 
+// console.log(letters);
 
     let themas = {};
     letters.map(letter => {
@@ -180,10 +181,8 @@ module.exports.searchThemas = async function(ctx, next){
             letters: [getLetterStruct(letter)]
         };
     });
-
+    //console.log(Object.values(themas));
     ctx.body = Object.values(themas);
-
-    console.log( 'search run time: ', (Date.now() - start)/1000, ' sec' );
 };
 
 function getLetterStruct(letter){
@@ -198,10 +197,75 @@ function getLetterStruct(letter){
     };
 }
 
+//Вариант 5
+//
+//работает - агрегация с новой схемой БД
+module.exports.searchThemas = async function(ctx, next){
+    console.log('тест Вариант 5:');
+    const filter = [{
+        $text: { 
+            $search: ctx.request.query.needle,
+            $language: 'russian'
+        }}];
+
+    if(ctx.request.query.letter_id)
+        filter.push({ _id: { $lt: new mongoose.Types.ObjectId(ctx.request.query.letter_id) } });
+
+    const result = await Letter
+        .aggregate([
+            { $match: { $and: filter }},
+            { 
+                $sort: { //этап сортировки должен быть первым иначе поиск тормозит.
+                    '_id': -1,
+                    //score: { $meta: "textScore" } //сортировка по релевантности добавляет тормозов (на 3,5М +1 sec)
+                }}, 
+            {
+                $lookup: {
+                    from: "letterthemes", 
+                    localField: "thema", 
+                    foreignField: "_id",
+                    as: "thema_parent"
+                }
+            },
+            { $limit: limitDocs },
+            {
+                $group: { 
+                    _id: "$thema",
+                    id: { "$first": "$thema_parent._id" },
+                    title: { "$first": "$thema_parent.title" },
+                    createdAt: { "$first": "$thema_parent.createdAt" },
+                    updatedAt: { "$first": "$thema_parent.updatedAt" },
+                    letters: { "$push": {
+                        id: "$_id",
+                        description: "$description",
+                        number: "$number",
+                        date: "$date",
+                        createdAt: "$createdAt",
+                        updatedAt: "$updatedAt",
+                    }}
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    id: 1,
+                    title: 1,
+                    createdAt: 1,
+                    updatedAt: 1,
+                    letters: 1,
+                }
+            }
+        ])
+        //.explain()
+        ;
+        //console.log(result);
+        ctx.body = result;
+};
 
 
-
-//работает - агрегация
+//Вариант 3
+//
+//работает - агрегация (простая схема БД)
 module.exports._searchThemas = async function(ctx, next){
     let start = Date.now();
 
@@ -261,7 +325,9 @@ module.exports._searchThemas = async function(ctx, next){
 };
 
 
-//работает - поиск по индексам
+//Вариант 2
+//
+//работает - поиск по индексам (простая схема БД)
 module.exports.__searchThemas = async function(ctx, next){
     //console.log(ctx.request.query);
 

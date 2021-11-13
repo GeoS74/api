@@ -155,6 +155,12 @@
         let fd = new FormData(searchForm);
         themas.query('GET', `/themas?needle=${fd.get('searchText')}`);
         themas.elem.innerHTML = '';
+
+        //заблокировать кнопку поиска, чтобы не "завалить сервер запросами"
+        searchForm.querySelector('button').disabled = true;
+
+        //скрыть кнопку подгрузки при начале нового поиска
+        load_next.hidden = true;
     };
 </script>
 
@@ -311,6 +317,10 @@
       .setParentNode('.main')
       .render()
       .setHandler(function(){
+// console.log(this.getVal());
+          //разблокировать кнопку поиска
+          searchForm.querySelector('button').disabled = false;
+
           if(!this.getVal().length) {
               load_next.hidden = true;
               return;
@@ -326,9 +336,10 @@
 
               this.render('beforeend', createHtmlThema(thema));  
           }
-               
-        
-              load_next.hidden = false;
+
+          //разблокировать и показать кнопку подгрузки данных
+          load_next.disabled = false;
+           load_next.hidden = false;
       })
       .query('GET', '/themas');
 </script>
@@ -340,6 +351,9 @@
   load_next.onclick = _ => {
     let fd = new FormData(searchForm);
     themas.query('GET', `/themas?needle=${fd.get('searchText')}&thema_id=${getLastThemaId.call(themas)}&letter_id=${getLastLetterId.call(themas)}`);
+
+    //заблокировать кнопку подгрузки данных, чтобы не "завалить сервер запросами"
+    load_next.disabled = true;
   };
 </script>
 
@@ -405,7 +419,7 @@
   }
 
   function getLastLetterId(){ //возвращает id последнего письма, полученного клиентом
-    return this.elem.lastElementChild.querySelector('.card-body').lastElementChild.dataset.letterId;
+    return this.elem.lastElementChild.querySelector('.card-body').lastElementChild.dataset.letterId || '';
   }
 </script>
 </div>

@@ -14,8 +14,10 @@ app.use(require('koa-static')('client/public'));
 
 
 app.use(async (ctx, next) => {
+    let start = Date.now();
     try{
         await next();
+        console.log( 'run time: ', (Date.now() - start)/1000, ' sec' );
     }
     catch(error){
         if(error.status){
@@ -74,7 +76,7 @@ router.del('/themas', ctx => {
 
 router.get('/letters', async ctx => {
     ctx.set('content-type', 'text/html');
-    ctx.body = fs.createReadStream(path.join(__dirname, 'client/boot.html'));
+    ctx.body = fs.createReadStream(path.join(__dirname, 'client/letters.html'));
 });
 router.post('/letter', koaBody, addLetter);
 // router.del('/letter/:id', allLetter);
