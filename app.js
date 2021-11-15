@@ -4,15 +4,14 @@ const fs = require('fs');
 const path = require('path');
 const pug = require('pug');
 const {allUsers, userById, createUser, updateUser} = require('./controllers/user');
-const {manyCreate, handleSearchVars, allThemas, addThema, searchThemas, addLetter} = require('./controllers/letters');
+const {manyCreate, objectIdValidator, allThemas, addThema, searchThemas, addLetter} = require('./controllers/letters');
 const koaBody = require('./libs/koaBody');
 
 const app = new Koa();
 
 app.use(require('koa-static')('client/public'));
 
-
-
+//logger
 app.use(async (ctx, next) => {
     let start = Date.now();
     try{
@@ -46,18 +45,26 @@ app.use(async (ctx, next) => {
 });
 
 
-
 const router = new Router();
 
-router.get('/hello', ctx => {
-    ctx.body = 'ok';
+router.get('/letters', async ctx => {
+    ctx.set('content-type', 'text/html');
+    ctx.body = fs.createReadStream(path.join(__dirname, 'client/tpl/letters/letters.html'));
 });
 
+//download scan-copy file
+router.get('/letters/files/:file_name', async ctx => {
+    console.log(ctx.params.file_name);
+    ctx.body = fs.createReadStream(path.join(__dirname, '/files/letters', ctx.params.file_name));
+});
 
-router.get('/manycreate', manyCreate);
+router.post('/letter', koaBody, addLetter);
+
+// router.del('/letter/:id', allLetter);
 
 
-router.get('/themas', handleSearchVars, allThemas, searchThemas);
+
+router.get('/themas', objectIdValidator, allThemas, searchThemas);
 //router.get('/themas/search', searchThemas);
 
 
@@ -65,21 +72,16 @@ router.post('/thema', koaBody, addThema);
 // router.put('/thema/:id', koaBody, allLetter);
 
 
-const connection = require('./libs/connection');
-router.del('/themas', ctx => {
-    connection.db.dropCollection('letters', function(err, result) {});
-    connection.db.dropCollection('letterthemes', function(err, result) {});
-    ctx.body = 'ok';
-});
 
 
 
-router.get('/letters', async ctx => {
-    ctx.set('content-type', 'text/html');
-    ctx.body = fs.createReadStream(path.join(__dirname, 'client/letters.html'));
-});
-router.post('/letter', koaBody, addLetter);
-// router.del('/letter/:id', allLetter);
+//router.get('/manycreate', manyCreate);
+// const connection = require('./libs/connection');
+// router.del('/themas', ctx => {
+//     connection.db.dropCollection('letters', function(err, result) {});
+//     connection.db.dropCollection('letterthemes', function(err, result) {});
+//     ctx.body = 'ok';
+// });
 
 
 
@@ -88,21 +90,12 @@ router.post('/letter', koaBody, addLetter);
 
 
 
-router.get('/test', async ctx => {
-    ctx.body = ctx.request.query;
-});
+// router.get('/test', async ctx => {
+//     ctx.body = ctx.request.query;
+// });
 
 
-router.get('/echo', async ctx => {
-    ctx.set('content-type', 'text/html');
-    ctx.body = fs.createReadStream(path.join(__dirname, 'client/example.html'));
-});
-router.post('/echo', koaBody, ctx => {
-    ctx.body = {
-        message: ctx.request.body.message,
-        date: Date.now(),
-    };
-});
+
 
 
 
@@ -274,16 +267,18 @@ router.post('/echo', koaBody, ctx => {
 
 
 
-router.get('/user', allUsers);
-router.get('/user/:id', userById);
-router.post('/user', koaBody, createUser);
-router.post('/user/:id', koaBody, updateUser);
+// router.get('/user', allUsers);
+// router.get('/user/:id', userById);
+// router.post('/user', koaBody, createUser);
+// router.post('/user/:id', koaBody, updateUser);
 
-app.use(router.routes());
+
 
 // app.use(ctx => {
 //     ctx.set('content-type', 'text/html');
 //     ctx.body = fs.createReadStream(path.join(__dirname, '/client/registrateForm.html'));
 // });
+
+app.use(router.routes());
 
 module.exports = app;

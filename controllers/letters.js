@@ -4,53 +4,10 @@ const mongoose = require('mongoose');
 const path = require('path');
 const Letter = require('../models/Letter');
 const LetterThema = require('../models/LetterThema');
-const limitDocs = 3;
+const limitDocs = 20;
 
 
 
-module.exports.manyCreate = async function(ctx, next){
-        const arr = [
-            {title: 'Lorem ipsum dolor sit amet'},
-            {title: 'Pellentesque habitant morbi tristique'},
-            {title: 'Vestibulum efficitur pharetra neque'},
-            {title: 'Aliquam et augue'},
-            {title: 'Morbi id mauris condimentum'},
-            {title: 'Donec tincidunt dapibus libero'},
-            {title: 'Curabitur eu nibh eu lorem posuere sagittis'},
-            {title: 'Nam vitae porta odio'},
-            {title: 'Mauris vitae nulla rhoncu'},
-            {title: 'Cras lacinia sapien'},
-            {title: 'Pellentesque pharetra eleifend enim non pulvinar'},
-            {title: 'Duis tincidunt ultrices neque quis vestibulum'},
-            {title: 'Nunc dignissim felis magna'},
-            {title: 'Pellentesque'},
-            {title: 'Vestibulum vulputate condimentum enim in varius'},
-            {title: 'Class aptent taciti sociosqu'},
-            {title: 'litora torquent per'},
-            {title: 'Phasellus sed facilisis ante'},
-            {title: 'Quisque fringilla'},
-            {title: 'neque leo vestibulum ipsum'},
-        ];
-
-
-
-        for(let i = 0; i < 50000; i++) {
-           let themas = await LetterThema.create(arr);
-
-           let letters = [];
-           for(let t of themas) {
-               letters.push({
-                    thema: t._id,
-                    thema_tags: t.title,
-                    description: t.title
-               });
-           }
-
-           await Letter.create(letters);
-        }
-
-        ctx.body = 'run time: ' + ((Date.now() - start)/1000) + ' sec';
-};
 
 
 module.exports.addThema = async function(ctx, next){
@@ -69,9 +26,35 @@ module.exports.addThema = async function(ctx, next){
     };
 };
 
+function getTimestamp(str){
+    if(!str) return null;
+    
+    let arr = str.split(/\D/g).reverse();
+
+    for(let i = -1; ++i < arr.length;){
+      
+      arr[i] = Number.parseInt(arr[i]);
+      if(i == 0 && (arr[i] < 1) && (arr[i] > 31)) return null;
+      if(i == 1 && (arr[i] < 1) && (arr[i] > 12)) return null;
+    }
+
+    if(arr[1]) --arr[1];
+      else arr[1] = 0;
+
+    const d = new Date(...arr);
+    if (Object.prototype.toString.call(d) === "[object Date]") {
+      // it is a date
+      if (isNaN(d.getTime())) return null; // date is not valid
+          else return d; // date is valid
+    } else {
+        return null; // not a date
+    }
+  }
+
 module.exports.addLetter = async function (ctx, next){
-    // console.log(ctx.request.body);
-    // console.log(ctx.request.files);
+
+    console.log(ctx.request.body);
+    console.log(ctx.request.files);
 
     //uncomment this
     //
@@ -79,8 +62,9 @@ module.exports.addLetter = async function (ctx, next){
     //     return ctx.throw('400', 'file not uploaded');
     // }
     // let newFileName = Date.now() + '.' + ctx.request.files.scanCopyLetter.name.split('.').pop();
-    // fs.rename(ctx.request.files.scanCopyLetter.path, './files/'+newFileName, err => {
-    //     if(err) throw err;
+    // fs.rename(ctx.request.files.scanCopyLetter.path, './files/letters/'+newFileName, err => {
+    //     //if(err) throw err;
+    //     if(err) ctx.throw('400', err);
     // });
 
     const thema = await LetterThema.findOne({'_id': ctx.request.body.id_thema});
@@ -89,9 +73,9 @@ module.exports.addLetter = async function (ctx, next){
         thema: ctx.request.body.id_thema,
         thema_tags: thema.title,
         number: ctx.request.body.number,
-        date: ctx.request.body.date || undefined,
+        date: getTimestamp(ctx.request.body.date) || undefined,
         description: ctx.request.body.description || undefined,
-        //uncomment this
+        // uncomment this
         //
         //scanCopyFile: newFileName
     });
@@ -106,27 +90,27 @@ module.exports.addLetter = async function (ctx, next){
 
 
 
-module.exports.handleSearchVars = async function(ctx, next){
-    if(ctx.request.query.thema_id) 
-        if(!isValidObjectId(ctx.request.query.thema_id)) ctx.throw(400, "thema_id is not ObjectId");
-
-
+module.exports.objectIdValidator = async function(ctx, next){
     if(ctx.request.query.letter_id) 
         if(!isValidObjectId(ctx.request.query.letter_id)) ctx.throw(400, "letter_id is not ObjectId");
 
+    if(ctx.request.query.thema_id) 
+        if(!isValidObjectId(ctx.request.query.thema_id)) ctx.throw(400, "thema_id is not ObjectId");
+    
     await next();
 };
+
 
 module.exports.allThemas = async function(ctx, next){
     if(ctx.request.query.needle) return await next();
 
-    const finder = {};
+    const filter = {};
 
-    if(ctx.request.query.thema_id) finder._id = {$lt: ctx.request.query.thema_id};
+    if(ctx.request.query.thema_id) filter._id = {$lt: ctx.request.query.thema_id};
 
    const themas = await LetterThema
-    .find(finder)
-    .sort({_id: -1}).limit(limitDocs)
+    .find(filter)
+    .sort({ _id: -1 }).limit(limitDocs)
     .populate('letters');
 
     ctx.body = themas.map(thema => ({
@@ -138,12 +122,11 @@ module.exports.allThemas = async function(ctx, next){
     }));
 };
 
-//Вариант 4
+//Вариант 4 - find() and populate()
 //
 //почитать про $meta
 //https://docs.mongodb.com/manual/reference/operator/aggregation/meta/#mongodb-expression-exp.-meta
-module.exports.searchThemas_ = async function(ctx, next){
-    console.log('тест Вариант 4:');
+module.exports.searchThemas = async function(ctx, next){
     const filter = {
         $text: { 
             $search: ctx.request.query.needle,
@@ -160,11 +143,9 @@ module.exports.searchThemas_ = async function(ctx, next){
         .find(filter, projection)
         .sort({
             _id: -1,
-           score: { $meta: "textScore" }
+           //score: { $meta: "textScore" } //сортировка по релевантности
         }).limit(limitDocs)
         .populate('thema');
-
-// console.log(letters);
 
     let themas = {};
     letters.map(letter => {
@@ -181,26 +162,14 @@ module.exports.searchThemas_ = async function(ctx, next){
             letters: [getLetterStruct(letter)]
         };
     });
-    //console.log(Object.values(themas));
+
     ctx.body = Object.values(themas);
 };
 
-function getLetterStruct(letter){
-    return {
-        id: letter._id,
-        description: letter.description,
-        number: letter.number,
-        date: letter.date,
-        pathFile: letter.scanCopyFile,
-        createdAt: letter.createdAt,
-        updatedAt: letter.updatedAt,
-    };
-}
-
-//Вариант 5
+//Вариант 5 - aggregate()
 //
 //работает - агрегация с новой схемой БД
-module.exports.searchThemas = async function(ctx, next){
+module.exports.searchThemas_ = async function(ctx, next){
     console.log('тест Вариант 5:');
     const filter = [{
         $text: { 
@@ -215,7 +184,7 @@ module.exports.searchThemas = async function(ctx, next){
         .aggregate([
             { $match: { $and: filter }},
             { 
-                $sort: { //этап сортировки должен быть первым иначе поиск тормозит.
+                $sort: { //этап сортировки писем должен быть первым иначе поиск тормозит.
                     '_id': -1,
                     //score: { $meta: "textScore" } //сортировка по релевантности добавляет тормозов (на 3,5М +1 sec)
                 }}, 
@@ -242,9 +211,9 @@ module.exports.searchThemas = async function(ctx, next){
                         date: "$date",
                         createdAt: "$createdAt",
                         updatedAt: "$updatedAt",
-                    }}
-                }
+                    }}}
             },
+            { $sort: { 'letters.id': -1 }}, //дополнительный этап сортировки по _id тем нужен, чтобы не было ошибок подгрузки данных
             {
                 $project: {
                     _id: 0,
@@ -262,6 +231,69 @@ module.exports.searchThemas = async function(ctx, next){
         ctx.body = result;
 };
 
+//сформировать структуру данных письма
+function getLetterStruct(letter){
+    return {
+        id: letter._id,
+        description: letter.description,
+        number: letter.number,
+        date: letter.date,
+        pathFile: letter.scanCopyFile,
+        createdAt: letter.createdAt,
+        updatedAt: letter.updatedAt,
+    };
+}
+
+//заполнение БД для тестов (отключи обязательную загрузку файлов)
+module.exports.manyCreate = async function(ctx, next){
+    const arr = [
+        {title: 'Lorem ipsum dolor sit amet'},
+        {title: 'Pellentesque habitant morbi tristique'},
+        {title: 'Vestibulum efficitur pharetra neque'},
+        {title: 'Aliquam et augue'},
+        {title: 'Morbi id mauris condimentum'},
+        {title: 'Donec tincidunt dapibus libero'},
+        {title: 'Curabitur eu nibh eu lorem posuere sagittis'},
+        {title: 'Nam vitae porta odio'},
+        {title: 'Mauris vitae nulla rhoncu'},
+        {title: 'Cras lacinia sapien'},
+        {title: 'Pellentesque pharetra eleifend enim non pulvinar'},
+        {title: 'Duis tincidunt ultrices neque quis vestibulum'},
+        {title: 'Nunc dignissim felis magna'},
+        {title: 'Pellentesque'},
+        {title: 'Vestibulum vulputate condimentum enim in varius'},
+        {title: 'Class aptent taciti sociosqu'},
+        {title: 'litora torquent per'},
+        {title: 'Phasellus sed facilisis ante'},
+        {title: 'Quisque fringilla'},
+        {title: 'neque leo vestibulum ipsum'},
+    ];
+
+
+
+    for(let i = 0; i < 50000; i++) {
+       let themas = await LetterThema.create(arr);
+
+       let letters = [];
+       for(let t of themas) {
+           letters.push({
+                thema: t._id,
+                thema_tags: t.title,
+                description: t.title
+           });
+       }
+
+       await Letter.create(letters);
+    }
+
+    ctx.body = 'run time: ' + ((Date.now() - start)/1000) + ' sec';
+};
+
+
+
+
+
+/*********** это тестовые функции поиска, не используй их ***********/
 
 //Вариант 3
 //

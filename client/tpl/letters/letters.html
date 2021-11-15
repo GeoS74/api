@@ -7,30 +7,6 @@
     <link href="/css/bootstrap.min.css" rel="stylesheet" type="text/css"/><!--https://bootswatch.com/cosmo/-->
                                                                           <!--https://icons.getbootstrap.com/-->
     <script type="text/javascript" src="/libs/El.js"></script>
-    <script>
-        //@Override
-        // Backend.prototype.query = function(method, path, data)
-        // {
-          
-        //   let foo = async function(){
-        //     path = path || this.backend.path;
-        //     method = method || this.backend.method;
-        //     data = data || this.backend.data;
-        //     let response = await fetch(path, {
-        //       method: method,
-        //       headers: {},
-        //       body: method !== 'GET' ? data : null,
-        //     });
-
-        //       try{
-        //           this.setVal(await response.json());
-        //       }catch(error){
-        //           console.log(error);
-        //       }
-        //   }.call(this);
-        //     return this;
-        // };
-    </script>
     <style>
         .main{margin: 20px; max-width:800px;}
         h1{margin: 35px 0}
@@ -76,6 +52,8 @@
           <a class="navbar-brand" href="#">MAGNUS<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-lightning-charge" viewBox="0 0 16 16">
             <path d="M11.251.068a.5.5 0 0 1 .227.58L9.677 6.5H13a.5.5 0 0 1 .364.843l-8 8.5a.5.5 0 0 1-.842-.49L6.323 9.5H3a.5.5 0 0 1-.364-.843l8-8.5a.5.5 0 0 1 .615-.09zM4.157 8.5H7a.5.5 0 0 1 .478.647L6.11 13.59l5.732-6.09H9a.5.5 0 0 1-.478-.647L9.89 2.41 4.157 8.5z"/>
           </svg></a>
+
+<!--           
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarColor01" aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
           </button>
@@ -107,10 +85,10 @@
                 </div>
               </li>
             </ul>
-            <!-- <form class="d-flex">
+            <form class="d-flex">
               <input class="form-control me-sm-2" type="text" placeholder="Search">
               <button class="btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
-            </form> -->
+            </form>
             <div class="d-flex">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
@@ -123,7 +101,8 @@
                     </li>
                   </ul>
             </div>
-          </div>
+          </div> -->
+        
         </div>
     </nav>
     
@@ -239,6 +218,47 @@
   //позиционирование формы
   letterForm.elem.style.left = document.documentElement.clientWidth/4 + 'px';
   letterForm.elem.style.top = document.documentElement.clientHeight/4 + 'px';
+
+
+  // console.log(new Date());
+  // console.log(new Date('2021-4-17'));
+  // console.log(new Date('17-4-2021'));
+  // console.log(new Date('2021.05.02'));
+  // console.log(new Date('17.4.2021'));
+
+  // console.log( 'getTimestamp: ', getTimestamp('2021-4-17') );
+  // console.log( 'getTimestamp: ', getTimestamp('17-4-2021') );
+  // console.log( 'getTimestamp: ', getTimestamp('-') );
+  // console.log( 'getTimestamp: ', getTimestamp('2021.05.02') );
+  console.log( 'getTimestamp: ', getTimestamp('17.4.2021') );
+  console.log( 'getTimestamp: ', getTimestamp('2021') );
+  console.log( 'getTimestamp: ', getTimestamp('f') );
+  console.log( 'getTimestamp: ', getTimestamp(' ') );
+
+  function getTimestamp(str){
+    if(!str) return null;
+    
+    let arr = str.split(/\D/g).reverse();
+
+    for(let i = -1; ++i < arr.length;){
+      
+      arr[i] = Number.parseInt(arr[i]);
+      if(i == 0 && (arr[i] < 1) && (arr[i] > 31)) return null;
+      if(i == 1 && (arr[i] < 1) && (arr[i] > 12)) return null;
+    }
+
+    if(arr[1]) --arr[1];
+      else arr[1] = 0;
+
+    const d = new Date(...arr);
+    if (Object.prototype.toString.call(d) === "[object Date]") {
+      // it is a date
+      if (isNaN(d.getTime())) return null; // date is not valid
+          else return d; // date is valid
+    } else {
+        return null; // not a date
+    }
+  }
   
    //text
    new El('<input type="text" name="number" id="numberLetterInput" class="form-control" placeholder="Номер письма"/>')
@@ -250,28 +270,40 @@
       .setParentNode(letterForm.elem.querySelector('.form-group'))
       .render()
       .wrap('<div class="simple_column" style="width:30%; float:right">')
-      .on('focus', function(){
-        console.log('focus');
-        
-        this.value = '__.__.____';
 
+      //установка даты
+      .on('focus', function(){
+        this.setSelectionRange(0, 0);
       })
       .on('blur', function(){
-        this.value = '';
+        if( this.value.match(/\d/g) && this.value.match(/\d/g).length !=8 )
+          this.value = makeDateTemplate('');
       })
-      .on('keydown', function(){
-        
-        //event.preventDefault();
-        let foo = this.value;
+      .on('input', function(){
+        let numbers = this.value.match(/\d/g) || [];
 
-        if(!event.key.match(/\d/)){
-          this.value = this.value;
-          //event.stopPropagation();
-          return;
-        }
+        this.value =  makeDateTemplate( numbers.join('') );
 
-        console.log(event.key.match(/\d/));
+        this.setSelectionRange(getPositionCursor(numbers), getPositionCursor(numbers));
       });
+
+      function getPositionCursor(arr){
+        if(arr.length <= 2) return arr.length;
+        if(arr.length > 2 && arr.length <= 3) return arr.length + 1;
+        if(arr.length > 3) return arr.length + 2;
+      }
+
+      function makeDateTemplate(str){
+        let result = '';
+
+        for(let i = 0; i < 8; i++){
+          if(i == 2 || i == 4) result += '.';
+
+          result += str[i] || '_';
+        }
+        return result;
+      }
+
 
 
     //file
@@ -317,7 +349,9 @@
       .setParentNode('.main')
       .render()
       .setHandler(function(){
-// console.log(this.getVal());
+
+//console.log(this.getVal());
+
           //разблокировать кнопку поиска
           searchForm.querySelector('button').disabled = false;
 
@@ -348,13 +382,33 @@
 <!--загрузка новых результатов-->
 <button type="button" id="load_next" class="btn btn-primary mt-4">Загрузить ещё...</button>
 <script>
+    // при запросе новых результатов клиент передаёт id крайней темы или письма. 
+    // причём если поиск не осуществляется, то надо передавать id  темы, 
+    // если запрашиваются новые данные поиска - id крайнего письма
   load_next.onclick = _ => {
+    console.log(themas.getVal());
+  
+    
     let fd = new FormData(searchForm);
     themas.query('GET', `/themas?needle=${fd.get('searchText')}&thema_id=${getLastThemaId.call(themas)}&letter_id=${getLastLetterId.call(themas)}`);
 
     //заблокировать кнопку подгрузки данных, чтобы не "завалить сервер запросами"
     load_next.disabled = true;
   };
+
+  function getLastThemaId(){ //возвращает id последней темы письма, полученного клиентом
+    return this.elem.lastElementChild.dataset.themaId || '';
+  }
+
+  function getLastLetterId(){ //возвращает id последнего письма, полученного клиентом
+    //id последнего письма извлекается из массива данных, возвращённых сервером, а не через селекторы
+    //т.к. клиент рендерит блоки с темами, то решение - поиск последнего id через селекторы оказывается не стабильным 
+    const last_letters = themas.getVal()[ themas.getVal().length - 1 ].letters;
+    return last_letters[last_letters.length - 1].id || '';
+
+    //этот вариант не стабилен
+    //return this.elem.lastElementChild.querySelector('.card-body').lastElementChild.dataset.letterId || '';
+  }
 </script>
 
 <script>//общие функции
@@ -389,7 +443,7 @@
     let letters = '';
     for(let letter of data.letters) 
         letters += `<div class="letter_row" data-letter-id="${letter.id}">
-                        <p class="card-text"><a href="/files/${letter.scanCopyFile}">№ ${letter.number || 'б/н'} от ${letter.date}</a></p>
+                        <p class="card-text"><a href="/letters/files/${letter.pathFile}">№ ${letter.number || 'б/н'} от ${letter.date}</a></p>
                         <small class="text-muted">${letter.description || ''}</small>
                     </div>`;
     return letters;
@@ -412,14 +466,6 @@
   
   function hideAddSpan(event){ //скрыть кнопку добавления письма
       event.target.querySelector('small').remove();
-  }
-  
-  function getLastThemaId(){ //возвращает id последней темы письма, полученного клиентом
-    return this.elem.lastElementChild.dataset.themaId;
-  }
-
-  function getLastLetterId(){ //возвращает id последнего письма, полученного клиентом
-    return this.elem.lastElementChild.querySelector('.card-body').lastElementChild.dataset.letterId || '';
   }
 </script>
 </div>

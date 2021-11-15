@@ -16,17 +16,11 @@ const schema = new mongoose.Schema({
 });
 
 
-
-
-
-// const Letter = require('./LetterThema');
 schema.virtual('letters', {
     ref: 'Letter',
     localField: '_id',
     foreignField: 'thema'
 });
-
-
 
 schema.index(
     { title: 'text' }, 
