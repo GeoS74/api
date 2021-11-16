@@ -16,7 +16,7 @@ app.use(async (ctx, next) => {
     let start = Date.now();
     try{
         await next();
-        console.log( 'run time: ', (Date.now() - start)/1000, ' sec' );
+        //console.log( 'run time: ', (Date.now() - start)/1000, ' sec' );
     }
     catch(error){
         if(error.status){
@@ -54,7 +54,6 @@ router.get('/letters', async ctx => {
 
 //download scan-copy file
 router.get('/letters/files/:file_name', async ctx => {
-    console.log(ctx.params.file_name);
     ctx.body = fs.createReadStream(path.join(__dirname, '/files/letters', ctx.params.file_name));
 });
 

@@ -26,7 +26,7 @@ const schema = new mongoose.Schema({
     },
     scanCopyFile: {
         type: String,
-        //required: 'поле ${PATH} обязательно для заполнения',
+        required: 'поле ${PATH} обязательно для заполнения',
     },
 }, {
     timestamps: true,

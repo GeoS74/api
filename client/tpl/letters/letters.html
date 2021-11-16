@@ -161,7 +161,7 @@
             if(this.getVal().error) {
                 let error_message = themaForm.elem.querySelector('.error_message');
                 if(error_message)error_message.remove();
-                this.elem.querySelector('label').insertAdjacentHTML('afterend', `<span class="error_message">заполните это поле</span>`);
+                this.elem.querySelector('label').insertAdjacentHTML('afterend', `<span class="error_message">${this.getVal().error}</span>`);
                 return;
             }
 
@@ -202,10 +202,9 @@
         .on('submit', function(){event.preventDefault()})
         .setHandler(async function(){
             if(this.getVal().error) {
-                console.log(this.getVal().error);
               let error_message = this.elem.querySelector('.error_message');
               if(error_message)error_message.remove();
-              //this.elem.querySelector('label').insertAdjacentHTML('afterend', `<span class="error_message">заполните это поле</span>`)
+              this.elem.querySelector('label').insertAdjacentHTML('afterend', `<span class="error_message">${this.getVal().error}</span>`)
               return;
             }
 
@@ -220,45 +219,7 @@
   letterForm.elem.style.top = document.documentElement.clientHeight/4 + 'px';
 
 
-  // console.log(new Date());
-  // console.log(new Date('2021-4-17'));
-  // console.log(new Date('17-4-2021'));
-  // console.log(new Date('2021.05.02'));
-  // console.log(new Date('17.4.2021'));
 
-  // console.log( 'getTimestamp: ', getTimestamp('2021-4-17') );
-  // console.log( 'getTimestamp: ', getTimestamp('17-4-2021') );
-  // console.log( 'getTimestamp: ', getTimestamp('-') );
-  // console.log( 'getTimestamp: ', getTimestamp('2021.05.02') );
-  console.log( 'getTimestamp: ', getTimestamp('17.4.2021') );
-  console.log( 'getTimestamp: ', getTimestamp('2021') );
-  console.log( 'getTimestamp: ', getTimestamp('f') );
-  console.log( 'getTimestamp: ', getTimestamp(' ') );
-
-  function getTimestamp(str){
-    if(!str) return null;
-    
-    let arr = str.split(/\D/g).reverse();
-
-    for(let i = -1; ++i < arr.length;){
-      
-      arr[i] = Number.parseInt(arr[i]);
-      if(i == 0 && (arr[i] < 1) && (arr[i] > 31)) return null;
-      if(i == 1 && (arr[i] < 1) && (arr[i] > 12)) return null;
-    }
-
-    if(arr[1]) --arr[1];
-      else arr[1] = 0;
-
-    const d = new Date(...arr);
-    if (Object.prototype.toString.call(d) === "[object Date]") {
-      // it is a date
-      if (isNaN(d.getTime())) return null; // date is not valid
-          else return d; // date is valid
-    } else {
-        return null; // not a date
-    }
-  }
   
    //text
    new El('<input type="text" name="number" id="numberLetterInput" class="form-control" placeholder="Номер письма"/>')
@@ -386,9 +347,6 @@
     // причём если поиск не осуществляется, то надо передавать id  темы, 
     // если запрашиваются новые данные поиска - id крайнего письма
   load_next.onclick = _ => {
-    console.log(themas.getVal());
-  
-    
     let fd = new FormData(searchForm);
     themas.query('GET', `/themas?needle=${fd.get('searchText')}&thema_id=${getLastThemaId.call(themas)}&letter_id=${getLastLetterId.call(themas)}`);
 
@@ -404,6 +362,7 @@
     //id последнего письма извлекается из массива данных, возвращённых сервером, а не через селекторы
     //т.к. клиент рендерит блоки с темами, то решение - поиск последнего id через селекторы оказывается не стабильным 
     const last_letters = themas.getVal()[ themas.getVal().length - 1 ].letters;
+    if(!last_letters.length) return '';
     return last_letters[last_letters.length - 1].id || '';
 
     //этот вариант не стабилен
@@ -414,12 +373,12 @@
 <script>//общие функции
   function hideModal(){ //скрыть модальное окно
       let error_message = themaForm.elem.querySelector('.error_message');
-      if(error_message)error_message.remove();
+      if(error_message) error_message.remove();
       themaForm.elem.reset();
       themaForm.elem.remove();
   
       error_message = letterForm.elem.querySelector('.error_message');
-      if(error_message)letterForm.remove();
+      if(error_message) error_message.remove();
       letterForm.elem.reset();
       letterForm.elem.remove();
   
@@ -443,11 +402,16 @@
     let letters = '';
     for(let letter of data.letters) 
         letters += `<div class="letter_row" data-letter-id="${letter.id}">
-                        <p class="card-text"><a href="/letters/files/${letter.pathFile}">№ ${letter.number || 'б/н'} от ${letter.date}</a></p>
+                        <p class="card-text"><a href="/letters/files/${letter.pathFile}">№ ${letter.number || 'б/н'} от ${formatDate(letter.date)}</a></p>
                         <small class="text-muted">${letter.description || ''}</small>
                     </div>`;
     return letters;
 }
+
+  function formatDate(date){
+    const d = new Date(date);
+    return `${d.getUTCDate()}.${d.getUTCMonth()}.${d.getUTCFullYear()}г.`;
+  }
   
   function showAddLetterForm(event){
     let s = event.target.closest('small');

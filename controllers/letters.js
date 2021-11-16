@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 const Letter = require('../models/Letter');
 const LetterThema = require('../models/LetterThema');
-const limitDocs = 20;
+const limitDocs = 50;
 
 
 
@@ -26,6 +26,7 @@ module.exports.addThema = async function(ctx, next){
     };
 };
 
+//получает дату в строке вида "ДД.ММ.ГГГГ", пытается преобразовать во временную метку и возвращает её в случае успеха или null
 function getTimestamp(str){
     if(!str) return null;
     
@@ -49,23 +50,31 @@ function getTimestamp(str){
     } else {
         return null; // not a date
     }
-  }
+}
 
 module.exports.addLetter = async function (ctx, next){
-
-    console.log(ctx.request.body);
-    console.log(ctx.request.files);
+    //console.log(ctx.request.body);
+    //console.log(ctx.request.files);
 
     //uncomment this
     //
-    // if(!ctx.request.files){
-    //     return ctx.throw('400', 'file not uploaded');
-    // }
-    // let newFileName = Date.now() + '.' + ctx.request.files.scanCopyLetter.name.split('.').pop();
-    // fs.rename(ctx.request.files.scanCopyLetter.path, './files/letters/'+newFileName, err => {
-    //     //if(err) throw err;
-    //     if(err) ctx.throw('400', err);
-    // });
+    if(!ctx.request.files){
+        return ctx.throw(400, 'файл не загружен');
+    }
+
+    if(!ctx.request.files.scanCopyLetter.size){
+        //delete temp file
+        fs.unlink(ctx.request.files.scanCopyLetter.path, err => {
+            if(err) console.log(err);
+        });
+        return ctx.throw(400, 'файл не загружен');
+    }
+
+    let newFileName = ctx.request.files.scanCopyLetter.hash + '_' + Date.now() + '.' + ctx.request.files.scanCopyLetter.name.split('.').pop();
+    fs.rename(ctx.request.files.scanCopyLetter.path, './files/letters/'+newFileName, err => {
+        //if(err) throw err;
+        if(err) ctx.throw(500, err);
+    });
 
     const thema = await LetterThema.findOne({'_id': ctx.request.body.id_thema});
 
@@ -77,7 +86,7 @@ module.exports.addLetter = async function (ctx, next){
         description: ctx.request.body.description || undefined,
         // uncomment this
         //
-        //scanCopyFile: newFileName
+        scanCopyFile: newFileName
     });
 
 
